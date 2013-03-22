@@ -1,0 +1,26 @@
+###########################
+## Package configuration ##
+###########################
+.PHONY: all detect-bad-students
+
+all: detect-bad-students all-generic
+
+# Please uncomment the following line.
+# STUDENTS=skywalker-vador
+
+ifeq ($(strip $(STUDENTS)),)
+detect-bad-students:
+	@echo "               !! WARNING !!                          "
+	@echo "******************************************************"
+	@echo "* You MUST define the STUDENTS environment variable. *"  
+	@echo "* (in the shell or in the Makefile.local)            *"
+	@echo "******************************************************"
+	@echo "               !! WARNING !!                          "
+STUDENTS = $(shell echo $$USER)
+endif
+
+VERSION   = 13.1
+TARGET    = clap
+TARGETEXT = clap
+PACKAGE   = clap-$(STUDENTS)-$(VERSION)
+
