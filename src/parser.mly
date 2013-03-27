@@ -19,12 +19,18 @@
 %token PLUS STAR MINUS SLASH PERCENT EQ ASSIGN
 %tocken DBL_AND DBL_PIPE LT_EQ GT_EQ NEG_EQ LT GT
 %token TILDE COLON SEMICOLON DOT COMMA UNDERSC VIDE
-%token 
+%token DBL_R_ARROW R_ARROW L_ARROW
+%token IF ELSE THEN FUN DO CASE DEF WITH AT IN WHERE END
+%token VAL IS TYPE REC OR AND NOT
+
 (* The lexing phase will produce the following tokens: *)
-%start<AST.program> program
+%start<AST.program> input
 
 
 %%
+(* The lexing phase will produce the following tokens: *)
+input: p=program EOF { p }
+
 
 program: 
    EOF
