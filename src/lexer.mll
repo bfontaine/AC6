@@ -1,6 +1,6 @@
 {
  (** This module implements lexical analysis. *)
-
+ open Parser
  }
 
 let var_id = ['a'-'z']['A'-'Z' 'a'-'z' '0'-'9' _]*       (** variables *)
@@ -8,7 +8,7 @@ let constr_id = ['A'-'Z' _]['A'-'Z' 'a'-'z' '0'-'9' _]*  (** constructors *)
 let type_id = ['a'-'z']['A'-'Z' 'a'-'z' '0'-'9' _]*      (** types *)
 let int_t = ['0'-'9']+ | 0x['0'-'9' 'a'-'f' 'A'-'F']+ | 0b['0' '1']+  (** integer litterals *)
 let atom = \\(**?:(?:0|1)?\d{1,2}|2(?:[0-4]\d|5[0-5])) *) 
-            | \0x['0'-'9' 'a'-'f' 'A'-'F'] 
+            | \0x['0'-'9' 'a'-'f' 'A'-'F']\0x['0'-'9' 'a'-'f' 'A'-'F'] 
             | [printable] 
             |'\\' | '\'' | '\n' | '\t' | '\b' | '\r'
 let char_t = [atom]                                      (** char litterals *)
@@ -30,11 +30,11 @@ rule main = parse
 | '%'           { PERCENT }
 | '='           { EQ }
 | ":="          { ASSIGN }
-| "&&"          { DOUBLE_AND }
-| "||"          { DOUBLE_PIPE }
+| "&&"          { DBL_AND }
+| "||"          { DBL_PIPE }
 | "<="          { LT_EQ }
 | ">="          { GT_EQ }
-| "!="          { NEQ }
+| "!="          { NEG_EQ }
 | '<'           { LT }
 | '>'           { GT }
 | '~'           { TILDE }
@@ -50,7 +50,7 @@ rule main = parse
 | "if"          { IF }
 | "then"        { THEN }
 | "else"        { ELSE }
-| "fun"         { FUNC }
+| "fun"         { FUN }
 | "do"          { DO }
 | "case"        { CASE }
 | "def"         { DEF }
