@@ -3,16 +3,21 @@
  open Parser
  }
 
-let var_id = ['a'-'z']['A'-'Z' 'a'-'z' '0'-'9' _]*       (** variables *)
-let constr_id = ['A'-'Z' _]['A'-'Z' 'a'-'z' '0'-'9' _]*  (** constructors *)
-let type_id = ['a'-'z']['A'-'Z' 'a'-'z' '0'-'9' _]*      (** types *)
-let int_t = ['0'-'9']+ | 0x['0'-'9' 'a'-'f' 'A'-'F']+ | 0b['0' '1']+  (** integer litterals *)
-let atom = \\(**?:(?:0|1)?\d{1,2}|2(?:[0-4]\d|5[0-5])) *) 
-            | \0x['0'-'9' 'a'-'f' 'A'-'F']\0x['0'-'9' 'a'-'f' 'A'-'F'] 
-            | [printable] 
-            |'\\' | '\'' | '\n' | '\t' | '\b' | '\r'
-let char_t = [atom]                                      (** char litterals *)
-let str = [atom]*                                        (** string litterals *)
+let d = ['0'-'9']
+let w = ['A'-'Z' 'a'-'z' '0'-'9' '_']
+let h = ['0'-'9' 'a'-'f' 'A'-'F']
+
+let var_id = ['a'-'z'] w*         (** variables *)
+let constr_id = ['A'-'Z' '_'] w*  (** constructors *)
+let type_id = var_id              (** types *)
+let integer = d+ | "0x" h+ | "0b" ['0' '1']+  (** integer litterals *)
+let atom =
+    "\\" ['0' '1'] d d | '2' ['0'-'4'] d | "25" ['0'-'5']
+  | "\0x" h h
+  | ['\x20'-'\x7E'] (* printable chars *)
+  | '\\' | '\'' | '\n' | '\t' | '\b' | '\r'
+let character = '\'' atom '\''   (** char litterals *)
+let str = '\'' atom* '\''        (** string litterals *)
 let layout = [ ' ' '\t' '\r' '\n']
 
 rule main = parse
@@ -66,8 +71,8 @@ rule main = parse
 | "or"          { OR }
 | "and"         { AND }
 | "not"         { NOT }
-| int_t as x    { INT x }
-| char_t as x   { CHAR x }
+| integer as x  { INT x }
+| character as x { CHAR x }
 | str as x      { STR x }
 | var_id as x   { VAR_ID x }
 | type_id as x  { TYPE_ID x }
