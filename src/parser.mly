@@ -9,6 +9,19 @@
 
 
 %token EOF
+%token <string> INT
+%token <string> CHAR
+%token <string> STR
+%token <string> VAR_ID
+%token <string> TYPE_ID
+%token <string> CONST_ID
+%token L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
+%token PLUS STAR MINUS SLASH PERCENT EQ ASSIGN
+%token DBL_AND DBL_PIPE LT_EQ GT_EQ NEG_EQ LT GT
+%token TILDE COLON SEMICOLON DOT COMMA UNDERSC ZERO
+%token DBL_R_ARROW R_ARROW L_ARROW
+%token IF ELSE THEN FUN DO CASE DEF WITH AT IN WHERE END
+%token VAL IS TYPE REC OR AND NOT
 
 %start<AST.program> program
 

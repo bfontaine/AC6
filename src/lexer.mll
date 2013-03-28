@@ -43,7 +43,7 @@ rule main = parse
 | '.'           { DOT }
 | ','           { COMMA }
 | '_'           { UNDERSC }
-| '0'           { VIDE }
+| '0'           { ZERO }
 | "=>"          { DBL_R_ARROW }
 | "->"          { R_ARROW }
 | "<-"          { L_ARROW }
@@ -72,7 +72,4 @@ rule main = parse
 | var_id as x   { VAR_ID x }
 | type_id as x  { TYPE_ID x }
 | const_id as x { CONST_ID x }
-| _                                     
-{ failwith "Students, this is your job."
-}
 
