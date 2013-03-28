@@ -13,7 +13,7 @@ let type_id = var_id              (** types *)
 let integer = d+ | "0x" h+ | "0b" ['0' '1']+  (** integer litterals *)
 let atom =
     "\\" ['0' '1'] d d | '2' ['0'-'4'] d | "25" ['0'-'5']
-  | "\0x" h h
+  | "\\0x" h h
   | ['\x20'-'\x7E'] (* printable chars *)
   | '\\' | '\'' | '\n' | '\t' | '\b' | '\r'
 let character = '\'' atom '\''   (** char litterals *)
@@ -22,6 +22,7 @@ let layout = [ ' ' '\t' '\r' '\n']
 
 rule main = parse
   layout        { main lexbuf }
+| '|'           { PIPE }
 | '('           { L_PAREN }
 | ')'           { R_PAREN }
 | '{'           { L_BRACKET }
@@ -76,5 +77,5 @@ rule main = parse
 | str as x      { STR x }
 | var_id as x   { VAR_ID x }
 | type_id as x  { TYPE_ID x }
-| const_id as x { CONST_ID x }
+| constr_id as x { CONSTR_ID x }
 

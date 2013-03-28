@@ -14,8 +14,8 @@
 %token <string> STR
 %token <string> VAR_ID
 %token <string> TYPE_ID
-%token <string> CONST_ID
-%token L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
+%token <string> CONSTR_ID
+%token PIPE L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
 %token PLUS STAR MINUS SLASH PERCENT EQ ASSIGN
 %token DBL_AND DBL_PIPE LT_EQ GT_EQ NEG_EQ LT GT
 %token TILDE COLON SEMICOLON DOT COMMA UNDERSC ZERO
@@ -32,9 +32,9 @@
 input:
     p=definitions EOF { p }
 
-var_id: v=VAR_ID     { Identifier(v)  }
-type_id: t=TYPE_ID   { TIdentifier(t) }
-const_id: c=CONST_ID { CIdentifier(c) }
+var_id: v=VAR_ID       { Identifier(v)  }
+type_id: t=TYPE_ID     { TIdentifier(t) }
+constr_id: c=CONSTR_ID { CIdentifier(c) }
 
 definitions:
     (* nothing *)               { []    }
@@ -51,9 +51,9 @@ types:
   | t1=TYPE_ID COMMA tl=types { t1::tl }
 
 vdefinition:
-      VAL b=binding EQ e=exp { Simple(b, e) }
+      VAL b=binding EQ e=expr { Simple(b, e) }
     (* FIXME: this doesn't use v1, bl, t1, e *)
-    | DEF v1=VAR_ID bl=bindings COLON t1=typ EQ e=exp w=with_list { MutuallyRecursive(w) }
+    | DEF v1=VAR_ID bl=bindings COLON t1=typ EQ e=expr w=with_list { MutuallyRecursive(w) }
 
 (* list of one or more '(binding)' *)
 bindings:
@@ -81,15 +81,15 @@ typ:
     ti=type_id                              { TVar(ti, [])   }
   | ti=type_id L_PAREN tl=types R_PAREN     { TVAR(ti, tl)   }
   | t1=typ R_ARROW t2=typ                   { TArrow(t1, t2) }
-  | L_BRACKET p=plus_constr_list  R_BRACKET { TSum(p)        }
+  | L_BRACKET p=plus_constr_list R_BRACKET  { TSum(p)        }
   | L_BRACKET p=star_constr_list R_BRACKET  { TProd(p)       }
   | REC ti=type_id IS t=typ                 { TRec(ti, t)    }
   | L_PAREN t=typ R_PAREN                   { t              }
 
 (* constr_id [type] *)
 constr:
-    c=contr_id       { TConstructor(c, None) }
-  | c=contr_id t=typ { TConstructor(c, t)    }
+    c=constr_id       { TConstructor(c, None) }
+  | c=constr_id t=typ { TConstructor(c, t)    }
 
 plus_constr_list:
     (* nothing *)                    { []   }
@@ -99,14 +99,8 @@ star_constr_list:
     (* nothing *)                    { []   }
   | c=constr STAR p=star_constr_list { c::p }
 
-
-(* comma-separated list of one or more types *)
-types:
-    t=typ          { [ t ] }
-  | t=typ tl=types { t::tl }
-
-  (* contr_id <- expr *)
-contr_arrow_expr: c=constr_id L_ARROW e=expr { (*TODO*) }
+(* contr_id <- expr *)
+constr_arrow_expr: c=constr_id L_ARROW e=expr { (*TODO*) }
 
 (* semicolon-separated list of one or more 'constr_id <- expr' *)
 constr_arrow_exprs:
@@ -116,7 +110,7 @@ constr_arrow_exprs:
 expr:
     i=INT                                                         { EInt(i)        }
   | c=CHAR                                                        { EChar(c)       }
-  | s=STRING                                                      { EString(s)     }
+  | s=STR                                                         { EString(s)     }
   | v=var_id                                                      { EVar(v)        }
   | c=constr_id                                                   { (*TODO*)       }
   | c=constr_id          L_SQUARE e=expr R_SQUARE                 { (*TODO*)       }
@@ -148,11 +142,11 @@ op:
   | PERCENT     { (*TODO*) }
   | EQ          { (*TODO*) }
   | ASSIGN      { (*TODO*) }
-  | DOUBLE_AND  { (*TODO*) }
-  | DOUBLE_PIPE { (*TODO*) }
+  | DBL_AND     { (*TODO*) }
+  | DBL_PIPE    { (*TODO*) }
   | LT_EQ       { (*TODO*) }
   | GT_EQ       { (*TODO*) }
-  | NEQ         { (*TODO*) }
+  | NEG_EQ      { (*TODO*) }
 
 unop:
     MINUS { (*TODO*) }
@@ -174,15 +168,15 @@ constr_patterns:
   | c1=constr_id R_ARROW p1=pattern SEMICOLON cp=constr_patterns              { (*TODO*)::cp }
 
 pattern:
-    c=constr_id { (*TODO*) }
-  | c=constr_id          L_SQUARE p=pattern R_SQUARE { (*TODO*) }
-  | c=constr_id AT t=typ { (*TODO*) }
-  | c=constr_id AT t=typ L_SQUARE p=pattern R_SQUARE { (*TODO*) }
-  |          L_BRACKET cp=constr_patterns R_BRACKET { (*TODO*) }
-  | AT t=typ L_BRACKET cp=constr_patterns R_BRACKET { (*TODO*) }
-  | p1=pattern OR p2=pattern { POr(p1, p2) }
-  | p1=pattern AND p2=pattern { PAnd(p1, p2) }
-  | NOT p=pattern { PNot(p) }
-  | ZERO { PZero }
-  | v=var_id { PVar(v) }
-  | UNDERSC { POne }
+    c=constr_id                                      { (*TODO*)     }
+  | c=constr_id          L_SQUARE p=pattern R_SQUARE { (*TODO*)     }
+  | c=constr_id AT t=typ                             { (*TODO*)     }
+  | c=constr_id AT t=typ L_SQUARE p=pattern R_SQUARE { (*TODO*)     }
+  |          L_BRACKET cp=constr_patterns R_BRACKET  { (*TODO*)     }
+  | AT t=typ L_BRACKET cp=constr_patterns R_BRACKET  { (*TODO*)     }
+  | p1=pattern OR p2=pattern                         { POr(p1, p2)  }
+  | p1=pattern AND p2=pattern                        { PAnd(p1, p2) }
+  | NOT p=pattern                                    { PNot(p)      }
+  | ZERO                                             { PZero        }
+  | v=var_id                                         { PVar(v)      }
+  | UNDERSC                                          { POne         }
