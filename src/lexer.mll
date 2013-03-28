@@ -17,7 +17,7 @@ let atom =
   | ['\x20'-'\x7E'] (* printable chars *)
   | '\\' | '\'' | '\n' | '\t' | '\b' | '\r'
 let character = '\'' atom '\''   (** char litterals *)
-let str = '\'' atom* '\''        (** string litterals *)
+let str = '"' atom* '"'        (** string litterals *)
 let layout = [ ' ' '\t' '\r' '\n']
 
 rule main = parse
