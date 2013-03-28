@@ -1,7 +1,7 @@
 (** This module defines the type of Abstract Syntax Trees. *)
 
 (** A program is a list of definitions. *)
-type program = definitions
+type program    = definitions
 
 and definitions = definition list
 
@@ -15,7 +15,7 @@ and definition =
 (** Definitions of values are splitted into two categories: *)
 and vdefinition =
 (** Simple value definition. *)
-| Simple  of binding * expr
+| Simple            of binding * expr
 (** Mutually recursive definitions (of functions). *)
 | MutuallyRecursive of (binding * expr) list
 
@@ -35,33 +35,30 @@ and typ =
 
 and types = typ list
 
-and constructor_type = TConstructor of constructor_identifier * typ option
-
+and constructor_type  = TConstructor of constructor_identifier * typ option
 and constructor_types = constructor_type list
 
 (** The syntax for expressions. *)
 and expr = 
-  | EInt	 of int
-  | EChar	 of char
-  | EString      of string
-  | EVar	 of value_identifier
-  | ESum	 of constructor_identifier * typ option * expr option
-  | EProd	 of typ option * constructor_definitions
-  | EAnnot	 of expr * typ
-  | ESeq	 of exprs
-  | EDef   	 of vdefinition * expr
-  | EApp         of expr * expr
-  | ECase	 of typ option * branches
-  | EFun         of binding * expr 
+  | EAnnot  of expr * typ
+  | EApp    of expr * expr
+  | ECase   of typ option * branches
+  | EChar   of char
+  | EDef    of vdefinition * expr
+  | EFun    of binding * expr
+  | EInt    of int
+  | EProd   of typ option * constructor_definitions
+  | ESeq    of exprs
+  | EString of string
+  | ESum    of constructor_identifier * typ option * expr option
+  | EVar    of value_identifier
 
 and exprs = expr list
 
-and constructor_definition = constructor_identifier * expr option
-
+and constructor_definition  = constructor_identifier * expr option
 and constructor_definitions = constructor_definition list
 
-and branch = Branch of (pattern * expr)
-
+and branch   = Branch of (pattern * expr)
 and branches = branch list
 
 and pattern = 
@@ -74,10 +71,9 @@ and pattern =
   | PVar  of value_identifier
   | POne 
 
-and value_identifier = Identifier of string
+and value_identifier       = Identifier of string
 
 and constructor_identifier = CIdentifier of string
 
-and type_identifier = TIdentifier of string
-
+and type_identifier  = TIdentifier of string
 and type_identifiers = type_identifier list
