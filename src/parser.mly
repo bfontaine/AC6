@@ -7,59 +7,119 @@
 
 %}
 
-(* The lexin phase will produce the following tokens: *)
-%token EOF
-%token <string> INT
-%token <string> CHAR
-%token <string> STR
-%token <string> VAR_ID
-%token <string> TYPE_ID
-%token <string> CONST_ID
-%token L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
-%token PLUS STAR MINUS SLASH PERCENT EQ ASSIGN
-%token DBL_AND DBL_PIPE LT_EQ GT_EQ NEG_EQ LT GT
-%token TILDE COLON SEMICOLON DOT COMMA UNDERSC VIDE
-%token DBL_R_ARROW R_ARROW L_ARROW
-%token IF ELSE THEN FUN DO CASE DEF WITH AT IN WHERE END
-%token VAL IS TYPE REC OR AND NOT
 
-(* The lexing phase will produce the following tokens: *)
-%start<AST.program> input
+%token EOF
+
+%start<AST.program> program
 
 
 %%
-(* The lexing phase will produce the following tokens: *)
-input: p=program EOF { p }
 
+(* a program is a list of definitions *)
+input:
+    p=definitions EOF { p }
 
-program: 
-   EOF
+var_id: v=VAR_ID     { Identifier(v)  }
+type_id: t=TYPE_ID   { TIdentifier(t) }
+const_id: c=CONST_ID { CIdentifier(c) }
 
-    {
-      failwith "Students, this is your job."
-    }
+definitions:
+    (* nothing *)               { []    }
+  | d=definition ds=definitions { d::ds }
 
 definition:
-    | TYPE type_id=TYPE_ID EQ ty=typ                                     {DType(type_id,[],ty)}
-    | TYPE type_id=TYPE_ID L_PAREN (*TODO Type list *) R_PAREN EQ ty=typ {DType(type_id,[],ty)}
-    | v=vdefinition                                                      {DVal(v)}
+      TYPE t1=TYPE_ID                          EQ t2=typ { DType(t1, [], t2) }
+    | TYPE t1=TYPE_ID L_PAREN tl=types R_PAREN EQ t2=typ { DType(t1, tl, t2) }
+    | v=vdefinition                                      { DVal(v)           }
+
+(* comma-separated list of one or more types *)
+types:
+    t1=TYPE_ID { [ t1 ] }
+  | t1=TYPE_ID COMMA tl=types { t1::tl }
 
 vdefinition:
-    | VAL bind=binding EQ e=exp {Simple(bind,e)}
-    | DEF var_t=VAR_ID (* TODO binding list *) COLON ty=typ EQ e=exp (*TODO with var_id binding list *) {}
+      VAL b=binding EQ e=exp { Simple(b, e) }
+    (* FIXME: this doesn't use v1, bl, t1, e *)
+    | DEF v1=VAR_ID bl=bindings COLON t1=typ EQ e=exp w=with_list { MutuallyRecursive(w) }
+
+(* list of one or more '(binding)' *)
+bindings:
+      (* nothing *) { [] }
+    | L_PAREN b=binding R_PAREN bl=bindings { b::bl }
 
 binding:
-    | arg=argument_identifier COLON ty=typ {Binding(arg,ty)}
-    | arg=argument_identifier              {Binding(arg,None)}
+      a=argument_identifier COLON t=typ { Binding(a, t)    }
+    | a=argument_identifier             { Binding(a, None) }
+
+(* list of one or more 'with' statements *)
+with_list:
+      (* nothing *)          { []    }
+    | w=with_st wl=with_list { w::wl }
+
+with_st:
+    (* FIXME: this doesn't use bl *)
+      WITH v=var_id bl=bindings COLON t=typ EQ e=expr { (Binding(v, t), e) }
 
 argument_identifier:
-    | var_id=VAR_ID {Named(var_id)}
-    | UNDERSC       {Unnamed}
+      v=VAR_ID { Named(v) }
+    | UNDERSC  { Unnamed  }
 
-type_identifiers:
-    | type_id=type_identifier 
-    |
+typ:
+    ti=type_id                              { TVar(ti, [])   }
+  | ti=type_id L_PAREN tl=types R_PAREN     { TVAR(ti, tl)   }
+  | t1=typ R_ARROW t2=typ                   { TArrow(t1, t2) }
+  | L_BRACKET p=plus_constr_list  R_BRACKET { TSum(p)        }
+  | L_BRACKET p=star_constr_list R_BRACKET  { TProd(p)       }
+  | REC ti=type_id IS t=typ                 { TRec(ti, t)    }
+  | L_PAREN t=typ R_PAREN                   { t              }
 
-type_identifier:
-    | type_id=TYPE_ID {TIdentifier(type_id)} 
-    
+(* constr_id [type] *)
+constr:
+    c=contr_id       { TConstructor(c, None) }
+  | c=contr_id t=typ { TConstructor(c, t)    }
+
+plus_constr_list:
+    (* nothing *)                    { []   }
+  | c=constr PLUS p=plus_constr_list { c::p }
+
+star_constr_list:
+    (* nothing *)                    { []   }
+  | c=constr STAR p=star_constr_list { c::p }
+
+
+(* comma-separated list of one or more types *)
+types:
+    t=typ          { [ t ] }
+  | t=typ tl=types { t::tl }
+
+  (* contr_id <- expr *)
+contr_arrow_expr: c=constr_id L_ARROW e=expr { (*TODO*) }
+
+(* semicolon-separated list of one or more 'constr_id <- expr' *)
+constr_arrow_expr_list:
+    c=constr_arrow_expr                                     { [c]   }
+  | c=constr_arrow_expr SEMICOLON el=constr_arrow_expr_list { e::el }
+
+expr:
+    i=INT                                                             { EInt(i)        }
+  | c=CHAR                                                            { EChar(c)       }
+  | s=STRING                                                          { EString(s)     }
+  | v=var_id                                                          { EVar(v)        }
+  | c=constr_id                                                       { (*TODO*)       }
+  | c=constr_id          L_SQUARE e=expr R_SQUARE                     { (*TODO*)       }
+  | c=constr_id AT t=typ                                              { (*TODO*)       }
+  | c=constr_id AT t=typ L_SQUARE e=expr R_SQUARE                     { (*TODO*)       }
+  | L_BRACKET c=constr_id L_ARROW cl=constr_arrow_expr_list R_BRACKET { (*TODO*)       }
+  | L_PAREN e=expr R_PAREN                                            { e              }
+  | L_PAREN e=expr COLON t=typ R_PAREN                                { EAnnot(e, t)   }
+  | e1=expr SEMICOLON e2=expr                                         { ESeq(e1, e2)   }
+  | v=vdefinition IN e=expr                                           { (*TODO*)       }
+  | e=expr WHERE v=vdefinition END                                    { (*TODO*)       }
+  | e1=expr e2=expr                                                   { EApp(e1, e2)   }
+  | e1=expr DOT e2=expr                                               { EApp(e2, e1)   } (*Not sure...*)
+  | e1=expr o=op e2=expr                                              { (*TODO*)       }
+  | u=unop e=expr                                                     { (*TODO*)       }
+  | CASE           L_BRACKET b=branch_list R_BRACKET                  { ECase(None, b) }
+  | CASE AT t=typ  L_BRACKET b=branch_list R_BRACKET                  { ECase(t, b)    }
+  | IF cond=expr THEN e1=expr                                         { (*TODO*)       }
+  | IF cond=expr THEN e1=expr ELSE e2=expr                            { (*TODO*)       }
