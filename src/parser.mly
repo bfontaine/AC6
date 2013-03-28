@@ -23,7 +23,7 @@
 %token IF ELSE THEN FUN DO CASE DEF WITH AT IN WHERE END
 %token VAL IS TYPE REC OR AND NOT
 
-%start<AST.program> program
+%start<AST.program> input
 
 
 %%
@@ -147,6 +147,8 @@ op:
   | LT_EQ       { (*TODO*) }
   | GT_EQ       { (*TODO*) }
   | NEG_EQ      { (*TODO*) }
+  | GT          { (*TODO*) }
+  | LT          { (*TODO*) }
 
 unop:
     MINUS { (*TODO*) }
@@ -164,19 +166,19 @@ branch: p=pattern DBL_R_ARROW e=expr { (*TODO*) }
 
 (* two or more contr_id -> pattern ; ... *)
 constr_patterns:
-    c1=constr_id R_ARROW p1=pattern SEMICOLON c2=constr_id R_ARROW p2=pattern { [(*TODO*)]   }
-  | c1=constr_id R_ARROW p1=pattern SEMICOLON cp=constr_patterns              { (*TODO*)::cp }
+    c1=constr_id R_ARROW p1=pattern SEMICOLON c2=constr_id R_ARROW p2=pattern { [(c1, p1), (c2, p2)]   }
+  | c=constr_id  R_ARROW p=pattern  SEMICOLON cp=constr_patterns              { (c, p)::cp }
 
 pattern:
-    c=constr_id                                      { (*TODO*)     }
-  | c=constr_id          L_SQUARE p=pattern R_SQUARE { (*TODO*)     }
-  | c=constr_id AT t=typ                             { (*TODO*)     }
-  | c=constr_id AT t=typ L_SQUARE p=pattern R_SQUARE { (*TODO*)     }
-  |          L_BRACKET cp=constr_patterns R_BRACKET  { (*TODO*)     }
-  | AT t=typ L_BRACKET cp=constr_patterns R_BRACKET  { (*TODO*)     }
-  | p1=pattern OR p2=pattern                         { POr(p1, p2)  }
-  | p1=pattern AND p2=pattern                        { PAnd(p1, p2) }
-  | NOT p=pattern                                    { PNot(p)      }
-  | ZERO                                             { PZero        }
-  | v=var_id                                         { PVar(v)      }
-  | UNDERSC                                          { POne         }
+    c=constr_id                                      { PSum(c, None, None) }
+  | c=constr_id          L_SQUARE p=pattern R_SQUARE { Psum(c, None, p)    }
+  | c=constr_id AT t=typ                             { PSum(c, t, None)    }
+  | c=constr_id AT t=typ L_SQUARE p=pattern R_SQUARE { PSum(c, t, p)       }
+  |          L_BRACKET cp=constr_patterns R_BRACKET  { PProd(None, cp)     }
+  | AT t=typ L_BRACKET cp=constr_patterns R_BRACKET  { PProd(t, cp)        }
+  | p1=pattern OR p2=pattern                         { POr(p1, p2)         }
+  | p1=pattern AND p2=pattern                        { PAnd(p1, p2)        }
+  | NOT p=pattern                                    { PNot(p)             }
+  | ZERO                                             { PZero               }
+  | v=var_id                                         { PVar(v)             }
+  | UNDERSC                                          { POne                }
