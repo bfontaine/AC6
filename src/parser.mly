@@ -41,14 +41,14 @@ definitions:
   | d=definition ds=definitions { d::ds }
 
 definition:
-      TYPE t1=TYPE_ID                          EQ t2=typ { DType(t1, [], t2) }
-    | TYPE t1=TYPE_ID L_PAREN tl=types R_PAREN EQ t2=typ { DType(t1, tl, t2) }
+      TYPE t1=type_id                          EQ t2=typ { DType(t1, [], t2) }
+    | TYPE t1=type_id L_PAREN tl=types R_PAREN EQ t2=typ { DType(t1, tl, t2) }
     | v=vdefinition                                      { DVal(v)           }
 
 (* comma-separated list of one or more types *)
 types:
-    t1=TYPE_ID { [ t1 ] }
-  | t1=TYPE_ID COMMA tl=types { t1::tl }
+    t1=type_id { [ t1 ] }
+  | t1=type_id COMMA tl=types { t1::tl }
 
 vdefinition:
       VAL b=binding EQ e=expr { Simple(b, e) }
