@@ -30,39 +30,46 @@
 
 (* a program is a list of definitions *)
 input:
-    p=definitions EOF { p }
+    p=list(definition) EOF { p }
 
 var_id: v=VAR_ID       { Identifier(v)  }
 type_id: t=TYPE_ID     { TIdentifier(t) }
 constr_id: c=CONSTR_ID { CIdentifier(c) }
 
-definitions:
-    (* nothing *)               { []    }
-  | d=definition ds=definitions { d::ds }
+(* == Lists == *)
+
+(* -- Possibly empty -- *)
+
+definitions: l=list(definition) { l }
+
+plus_constr_list: l=separated_list(PLUS, constr) { l }
+star_constr_list: l=separated_list(STAR, constr) { l }
+
+(* -- Non empty -- *)
+
+bindings: l=nonempty_list(paren_binding) { l }
+types: l=separated_nonempty_list(COMMA, type_id) { l }
+constr_defs: l=separated_nonempty_list(SEMICOLON, constr_def) { l }
+
+branch_list_with_no_pipe: l=separated_nonempty_list(PIPE, branch) { l }
+
+(* ==== *)
 
 definition:
       TYPE t1=type_id                          EQ t2=typ { DType(t1, [], t2) }
     | TYPE t1=type_id L_PAREN tl=types R_PAREN EQ t2=typ { DType(t1, tl, t2) }
     | v=vdefinition                                      { DVal(v)           }
 
-(* comma-separated list of one or more types *)
-types:
-    t1=type_id { [ t1 ] }
-  | t1=type_id COMMA tl=types { t1::tl }
-
 vdefinition:
       VAL b=binding EQ e=expr { Simple(b, e) }
     (* FIXME: this doesn't use v1, bl, t1, e *)
-    | DEF v1=VAR_ID bl=bindings COLON t1=typ EQ e=expr w=with_list { MutuallyRecursive(w) }
-
-(* list of one or more '(binding)' *)
-bindings:
-      (* nothing *) { [] }
-    | L_PAREN b=binding R_PAREN bl=bindings { b::bl }
+    | DEF v1=var_id bl=bindings COLON t1=typ EQ e=expr w=with_list { MutuallyRecursive(w) }
 
 binding:
       a=argument_identifier COLON t=typ { Binding(a, t)    }
     | a=argument_identifier             { Binding(a, None) }
+
+paren_binding: L_PAREN b=binding R_PAREN { b }
 
 (* list of one or more 'with' statements *)
 with_list:
@@ -74,7 +81,7 @@ with_st:
       WITH v=var_id bl=bindings COLON t=typ EQ e=expr { (Binding(v, t), e) }
 
 argument_identifier:
-      v=VAR_ID { Named(v) }
+      v=var_id { Named(v) }
     | UNDERSC  { Unnamed  }
 
 typ:
@@ -91,21 +98,8 @@ constr:
     c=constr_id       { TConstructor(c, None) }
   | c=constr_id t=typ { TConstructor(c, t)    }
 
-plus_constr_list:
-    (* nothing *)                    { []   }
-  | c=constr PLUS p=plus_constr_list { c::p }
-
-star_constr_list:
-    (* nothing *)                    { []   }
-  | c=constr STAR p=star_constr_list { c::p }
-
 (* contr_id <- expr *)
 constr_def: c=constr_id L_ARROW e=expr { (c, e) }
-
-(* semicolon-separated list of one or more 'constr_id <- expr' *)
-constr_defs:
-    c=constr_def                          { [c]   }
-  | c=constr_def SEMICOLON el=constr_defs { e::el }
 
 expr:
     i=INT                                            { EInt(i)             }
@@ -155,20 +149,18 @@ unop:
     MINUS { (*TODO*) }
   | TILDE { (*TODO*) }
 
-(* one or more branches, with no PIPE at the beginning *)
-branch_list_with_no_pipe:
-    b=branch { [b] }
-  | b=branch PIPE branch_list { b::bl }
-
 (* one or more branches *)
 branch_list: option(PIPE) bl=branch_list_with_no_pipe { bl }
 
 branch: p=pattern DBL_R_ARROW e=expr { (*TODO*) }
 
+(* constr_id -> pattern *)
+constr_pattern: c=constr_id R_ARROW p=pattern { (c, p) }
+
 (* two or more contr_id -> pattern ; ... *)
 constr_patterns:
-    c1=constr_id R_ARROW p1=pattern SEMICOLON c2=constr_id R_ARROW p2=pattern { [(c1, p1), (c2, p2)]   }
-  | c=constr_id  R_ARROW p=pattern  SEMICOLON cp=constr_patterns              { (c, p)::cp }
+    cp1=constr_pattern SEMICOLON cp2=constr_pattern { [cp1, cp2] }
+  | cp=constr_pattern SEMICOLON cps=constr_patterns { cp::cps    }
 
 pattern:
     c=constr_id                                      { PSum(c, None, None) }
@@ -183,3 +175,4 @@ pattern:
   | ZERO                                             { PZero               }
   | v=var_id                                         { PVar(v)             }
   | UNDERSC                                          { POne                }
+
