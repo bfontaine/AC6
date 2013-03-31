@@ -62,7 +62,7 @@ definition:
 
 vdefinition:
       VAL b=binding EQ e=expr { Simple(b, e) }
-    (* FIXME: this doesn't use v1, bl, t1, e *)
+    (* FIXME: this doesn't use v1, bl, t1, e. See sugar.mli l.35 *)
     | DEF v1=var_id bl=bindings COLON t1=typ EQ e=expr w=with_list { MutuallyRecursive(w) }
 
 binding:
@@ -118,16 +118,16 @@ expr:
   | v=vdefinition IN e=expr                          { EDef(v, e)          }
   | e=expr WHERE v=vdefinition END                   { EDef(v, e)          }
   | e1=expr e2=expr                                  { EApp(e1, e2)        }
-  | e1=expr DOT e2=expr                              { EApp(e2, e1)        } (*Not sure...*)
+  | e1=expr DOT e2=expr                              { EApp(e2, e1)        }
   | e1=expr o=op e2=expr                             { (*TODO*)            }
   | u=unop e=expr                                    { (*TODO*)            }
   | CASE           L_BRACKET b=branch_list R_BRACKET { ECase(None, b)      }
   | CASE AT t=typ  L_BRACKET b=branch_list R_BRACKET { ECase(t, b)         }
-  | IF cond=expr THEN e1=expr                        { (*TODO*)            }
-  | IF cond=expr THEN e1=expr ELSE e2=expr           { (*TODO*)            }
-  | FUN bl=bindings             DBL_R_ARROW e=expr   { (*TODO*)            }
-  | FUN bl=bindings COLON t=typ DBL_R_ARROW e=expr   { (*TODO*)            }
-  | DO L_BRACKET e=expr R_BRACKET                    { (*TODO*)            }
+  | IF cond=expr THEN e1=expr                        { mk_ifthen cond e1   }
+  | IF cond=expr THEN e1=expr ELSE e2=expr           { mk_ifthenelse cond e1 e2 }
+  | FUN bl=bindings             DBL_R_ARROW e=expr   { mk_fun bl None e    }
+  | FUN bl=bindings COLON t=typ DBL_R_ARROW e=expr   { mk_fun bl t e       }
+  | DO L_BRACKET e=expr R_BRACKET                    { mk_do e }
 
 op:
     PLUS        { (*TODO*) }
