@@ -50,6 +50,7 @@ star_constr_list: l=separated_list(STAR, constr) { l }
 bindings: l=nonempty_list(paren_binding) { l }
 types: l=separated_nonempty_list(COMMA, type_id) { l }
 constr_defs: l=separated_nonempty_list(SEMICOLON, constr_def) { l }
+with_list: l=nonempty_list(with_st) { l }
 
 branch_list_with_no_pipe: l=separated_nonempty_list(PIPE, branch) { l }
 
@@ -70,11 +71,6 @@ binding:
     | a=argument_identifier             { Binding(a, None) }
 
 paren_binding: L_PAREN b=binding R_PAREN { b }
-
-(* list of one or more 'with' statements *)
-with_list:
-      (* nothing *)          { []    }
-    | w=with_st wl=with_list { w::wl }
 
 with_st:
     (* FIXME: this doesn't use bl *)
@@ -123,8 +119,8 @@ expr:
   | u=unop e=expr                                    { (*TODO*)            }
   | CASE           L_BRACKET b=branch_list R_BRACKET { ECase(None, b)      }
   | CASE AT t=typ  L_BRACKET b=branch_list R_BRACKET { ECase(t, b)         }
-  | IF cond=expr THEN e1=expr                        { mk_ifthen cond e1   }
   | IF cond=expr THEN e1=expr ELSE e2=expr           { mk_ifthenelse cond e1 e2 }
+  | IF cond=expr THEN e1=expr                        { mk_ifthen cond e1   }
   | FUN bl=bindings             DBL_R_ARROW e=expr   { mk_fun bl None e    }
   | FUN bl=bindings COLON t=typ DBL_R_ARROW e=expr   { mk_fun bl t e       }
   | DO L_BRACKET e=expr R_BRACKET                    { mk_do e }
@@ -152,7 +148,7 @@ unop:
 (* one or more branches *)
 branch_list: option(PIPE) bl=branch_list_with_no_pipe { bl }
 
-branch: p=pattern DBL_R_ARROW e=expr { (*TODO*) }
+branch: p=pattern DBL_R_ARROW e=expr { Branch(p, e) }
 
 (* constr_id -> pattern *)
 constr_pattern: c=constr_id R_ARROW p=pattern { (c, p) }
