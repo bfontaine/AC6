@@ -10,8 +10,8 @@
 
 
 %token EOF
-%token <string> INT
-%token <string> CHAR
+%token <int> INT
+%token <char> CHAR
 %token <string> STR
 %token <string> VAR_ID
 %token <string> TYPE_ID
@@ -56,7 +56,7 @@ branch: p=pattern DBL_R_ARROW e=expr { Branch(p, e) }
 constr: c=constr_id t=option(typ) { TConstructor(c, t) }
 
 (* contr_id <- expr *)
-constr_def: ce=separated_pair(constr_id, L_ARROW ,expr) { ce }
+constr_def: ce=separated_pair(constr_id, L_ARROW , option(expr)) { ce }
 constr_defs: l=separated_nonempty_list(SEMICOLON, constr_def) { l }
 
 plus_constr_list: l=separated_list(PLUS, constr) { l }
@@ -67,7 +67,7 @@ star_constr_list: l=separated_list(STAR, constr) { l }
 
 definition:
 (** type definitions *)
-      TYPE t1=type_id tl=delimited(L_PAREN, types, R_PAREN) EQ t2=typ { DType(t1, tl, t2) }
+      TYPE t1=type_id tl=delimited(L_PAREN, type_ids, R_PAREN) EQ t2=typ { DType(t1, tl, t2) }
 (** variable definitions *)
     | v=vdefinition { DVal(v) }
 
@@ -75,12 +75,12 @@ vdefinition:
       VAL b=binding EQ e=expr { Simple(b, e) }
 (** function definitions *)
     | DEF v=var_id bl=bindings COLON t=typ EQ e=expr w=with_list
-      { MutuallyRecursive((Binding(Named(v), None), mk_fundef bl t e)::w) }
+      { MutuallyRecursive((Binding(Named(v), None), mk_fundef bl (Some t) e)::w) }
 
 with_list: l=nonempty_list(with_st) { l }
 
 with_st:
-      WITH v=var_id bl=bindings COLON t=typ EQ e=expr { (Binding(Named(v), None), mk_fundef bl t e) }
+      WITH v=var_id bl=bindings COLON t=typ EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
 
 
 (** == Expressions == *)
@@ -94,7 +94,7 @@ expr:
   | t=option(preceded(AT, typ)) cl=delimited(L_BRACKET, constr_defs, R_BRACKET)           { EProd(t, cl)             }
   | e=delimited(L_PAREN, expr, R_PAREN)                                                   { e                        }
   | L_PAREN e=expr COLON t=typ R_PAREN                                                    { EAnnot(e, t)             }
-  | e1=expr SEMICOLON e2=expr                                                             { ESeq(e1, e2)             }
+  | e1=expr SEMICOLON e2=expr                                                             { ESeq([e1; e2])           }
   | v=vdefinition IN e=expr                                                               { EDef(v, e)               }
   | e=expr WHERE v=vdefinition END                                                        { EDef(v, e)               }
   | e1=expr e2=expr                                                                       { EApp(e1, e2)             }
@@ -118,6 +118,7 @@ constr_id: c=CONSTR_ID { CIdentifier(c) }
 type_id: t=TYPE_ID     { TIdentifier(t) }
 var_id: v=VAR_ID       { Identifier(v)  }
 
+type_ids: l=separated_list(COMMA, type_id) { l }
 
 (** == Operations == *)
 
@@ -153,7 +154,7 @@ constr_pattern: cp=separated_pair(constr_id, R_ARROW, pattern) { cp }
 
 (* two or more contr_id -> pattern ; ... *)
 constr_patterns:
-    cp1=constr_pattern SEMICOLON cp2=constr_pattern { [cp1, cp2] }
+    cp1=constr_pattern SEMICOLON cp2=constr_pattern { [cp1; cp2] }
   | cp=constr_pattern SEMICOLON cps=constr_patterns { cp::cps    }
 
 pattern:
@@ -177,5 +178,5 @@ typ:
   | REC ti=type_id IS t=typ                             { TRec(ti, t)    }
   | t=delimited(L_PAREN, typ, R_PAREN)                  { t              }
 
-types: l=separated_list(COMMA, type_id) { l }
+types: l=separated_list(COMMA, typ) { l }
 
