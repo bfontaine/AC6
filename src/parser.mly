@@ -16,9 +16,9 @@
 %token <string> TYPE_ID
 %token <string> CONSTR_ID
 %token PIPE L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
-%token PLUS STAR MINUS SLASH PERCENT EQ ASSIGN
+%token PLUS STAR (* MINUS SLASH PERCENT *) EQ (* ASSIGN
 %token DBL_AND DBL_PIPE LT_EQ GT_EQ NEG_EQ LT GT
-%token TILDE COLON SEMICOLON DOT COMMA UNDERSC ZERO
+%token TILDE *) COLON SEMICOLON DOT COMMA UNDERSC ZERO
 %token DBL_R_ARROW R_ARROW L_ARROW
 %token IF ELSE THEN FUN DO CASE DEF WITH AT IN WHERE END
 %token VAL IS TYPE REC OR AND NOT
@@ -115,8 +115,8 @@ expr:
   | e=expr WHERE v=vdefinition END                   { EDef(v, e)          }
   | e1=expr e2=expr                                  { EApp(e1, e2)        }
   | e1=expr DOT e2=expr                              { EApp(e2, e1)        }
-  | e1=expr o=op e2=expr                             { (*TODO*)            }
-  | u=unop e=expr                                    { (*TODO*)            }
+(*| e1=expr o=op e2=expr                             { TODO                }
+  | u=unop e=expr                                    { TODO                }*)
   | CASE           L_BRACKET b=branch_list R_BRACKET { ECase(None, b)      }
   | CASE AT t=typ  L_BRACKET b=branch_list R_BRACKET { ECase(t, b)         }
   | IF cond=expr THEN e1=expr ELSE e2=expr           { mk_ifthenelse cond e1 e2 }
@@ -125,25 +125,26 @@ expr:
   | FUN bl=bindings COLON t=typ DBL_R_ARROW e=expr   { mk_fun bl t e       }
   | DO L_BRACKET e=expr R_BRACKET                    { mk_do e }
 
+(*
 op:
-    PLUS        { (*TODO*) }
-  | STAR        { (*TODO*) }
-  | MINUS       { (*TODO*) }
-  | SLASH       { (*TODO*) }
-  | PERCENT     { (*TODO*) }
-  | EQ          { (*TODO*) }
-  | ASSIGN      { (*TODO*) }
-  | DBL_AND     { (*TODO*) }
-  | DBL_PIPE    { (*TODO*) }
-  | LT_EQ       { (*TODO*) }
-  | GT_EQ       { (*TODO*) }
-  | NEG_EQ      { (*TODO*) }
-  | GT          { (*TODO*) }
-  | LT          { (*TODO*) }
+    PLUS        { TODO }
+  | STAR        { TODO }
+  | MINUS       { TODO }
+  | SLASH       { TODO }
+  | PERCENT     { TODO }
+  | EQ          { TODO }
+  | ASSIGN      { TODO }
+  | DBL_AND     { TODO }
+  | DBL_PIPE    { TODO }
+  | LT_EQ       { TODO }
+  | GT_EQ       { TODO }
+  | NEG_EQ      { TODO }
+  | GT          { TODO }
+  | LT          { TODO }
 
 unop:
-    MINUS { (*TODO*) }
-  | TILDE { (*TODO*) }
+    MINUS { TODO }
+  | TILDE { TODO } *)
 
 (* one or more branches *)
 branch_list: option(PIPE) bl=branch_list_with_no_pipe { bl }
