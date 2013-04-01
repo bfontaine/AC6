@@ -30,11 +30,11 @@ rule main = parse
 | '['           { L_SQUARE }
 | ']'           { R_SQUARE }
 | '+'           { PLUS }
-| '*'           { STAR } (*
+| '*'           { STAR }
+| '='           { EQ } (*
 | '-'           { MINUS }
 | '/'           { SLASH }
-| '%'           { PERCENT } *)
-| '='           { EQ } (*
+| '%'           { PERCENT }
 | ":="          { ASSIGN }
 | "&&"          { DBL_AND }
 | "||"          { DBL_PIPE }
