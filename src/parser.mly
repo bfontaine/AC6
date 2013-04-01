@@ -17,7 +17,7 @@
 %token <string> TYPE_ID
 %token <string> CONSTR_ID
 %token PIPE L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
-%token PLUS STAR (* MINUS SLASH PERCENT *) EQ (* ASSIGN
+%token PLUS STAR EQ (* MINUS SLASH PERCENT ASSIGN
 %token DBL_AND DBL_PIPE LT_EQ GT_EQ NEG_EQ LT GT
 %token TILDE *) COLON SEMICOLON DOT COMMA UNDERSC ZERO
 %token DBL_R_ARROW R_ARROW L_ARROW
@@ -56,7 +56,7 @@ branch_list_with_no_pipe: l=separated_nonempty_list(PIPE, branch) { l }
 (* ==== *)
 
 definition:
-      TYPE t1=type_id                          EQ t2=typ              { DType(t1, [], t2) }
+      TYPE t1=type_id                                       EQ t2=typ { DType(t1, [], t2) }
     | TYPE t1=type_id tl=delimited(L_PAREN, types, R_PAREN) EQ t2=typ { DType(t1, tl, t2) }
     | v=vdefinition                                                   { DVal(v)           }
 
@@ -69,7 +69,7 @@ binding:
       a=argument_identifier COLON t=typ { Binding(a, t)    }
     | a=argument_identifier             { Binding(a, None) }
 
-paren_binding: L_PAREN b=binding R_PAREN { b }
+paren_binding: b=delimited(L_PAREN, binding, R_PAREN) { b }
 
 with_st:
       WITH v=var_id bl=bindings COLON t=typ EQ e=expr { mk_fundef bl t e }
@@ -80,7 +80,7 @@ argument_identifier:
 
 typ:
     ti=type_id                                          { TVar(ti, [])   }
-  | ti=type_id tl=delimited(L_PAREN, types, R_PAREN)    { TVAR(ti, tl)   }
+  | ti=type_id tl=delimited(L_PAREN, types, R_PAREN)    { TVar(ti, tl)   }
   | t1=typ R_ARROW t2=typ                               { TArrow(t1, t2) }
   | p=delimited(L_BRACKET, plus_constr_list, R_BRACKET) { TSum(p)        }
   | p=delimited(L_BRACKET, star_constr_list, R_BRACKET) { TProd(p)       }
@@ -102,8 +102,8 @@ expr:
   | c=constr_id          e=delimited(L_SQUARE, expr, R_SQUARE)    { ESum(c, None, e)         }
   | c=constr_id AT t=typ e=delimited(L_SQUARE, expr, R_SQUARE)    { ESum(c, t, e)            }
   | c=constr_id AT t=typ                                          { ESum(c, t, None)         }
-  | AT t=typ cl=delimited(L_BRACKET, constr_defs, R_BRACKET)      { Eprod(t, cl)             }
-  |          cl=delimited(L_BRACKET, constr_defs, R_BRACKET)      { Eprod(None, cl)          }
+  | AT t=typ cl=delimited(L_BRACKET, constr_defs, R_BRACKET)      { EProd(t, cl)             }
+  |          cl=delimited(L_BRACKET, constr_defs, R_BRACKET)      { EProd(None, cl)          }
   | e=delimited(L_PAREN, expr, R_PAREN)                           { e                        }
   | L_PAREN e=expr COLON t=typ R_PAREN                            { EAnnot(e, t)             }
   | e1=expr SEMICOLON e2=expr                                     { ESeq(e1, e2)             }
@@ -157,7 +157,7 @@ constr_patterns:
 
 pattern:
     c=constr_id                                                   { PSum(c, None, None) }
-  | c=constr_id          p=delimited(L_SQUARE, pattern, R_SQUARE) { Psum(c, None, p)    }
+  | c=constr_id          p=delimited(L_SQUARE, pattern, R_SQUARE) { PSum(c, None, p)    }
   | c=constr_id AT t=typ                                          { PSum(c, t, None)    }
   | c=constr_id AT t=typ p=delimited(L_SQUARE, pattern, R_SQUARE) { PSum(c, t, p)       }
   |          cp=delimited(L_BRACKET, constr_patterns, R_BRACKET)  { PProd(None, cp)     }
