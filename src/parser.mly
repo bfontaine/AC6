@@ -80,7 +80,7 @@ vdefinition:
 with_list: l=nonempty_list(with_st) { l }
 
 with_st:
-      WITH v=var_id bl=bindings COLON t=typ EQ e=expr { mk_fundef bl t e }
+      WITH v=var_id bl=bindings COLON t=typ EQ e=expr { (Binding(Named(v), None), mk_fundef bl t e) }
 
 
 (** == Expressions == *)
