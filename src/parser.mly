@@ -56,9 +56,9 @@ branch_list_with_no_pipe: l=separated_nonempty_list(PIPE, branch) { l }
 (* ==== *)
 
 definition:
-      TYPE t1=type_id                          EQ t2=typ { DType(t1, [], t2) }
+      TYPE t1=type_id                          EQ t2=typ              { DType(t1, [], t2) }
     | TYPE t1=type_id tl=delimited(L_PAREN, types, R_PAREN) EQ t2=typ { DType(t1, tl, t2) }
-    | v=vdefinition                                      { DVal(v)           }
+    | v=vdefinition                                                   { DVal(v)           }
 
 vdefinition:
       VAL b=binding EQ e=expr { Simple(b, e) }
@@ -91,7 +91,7 @@ typ:
 constr: c=constr_id t=option(typ) { TConstructor(c, t) }
 
 (* contr_id <- expr *)
-constr_def: c=constr_id L_ARROW e=expr { (c, e) }
+constr_def: ce=separated_pair(constr_id, L_ARROW ,expr) { ce }
 
 expr:
     i=INT                                                         { EInt(i)                  }
@@ -148,7 +148,7 @@ branch_list: option(PIPE) bl=branch_list_with_no_pipe { bl }
 branch: p=pattern DBL_R_ARROW e=expr { Branch(p, e) }
 
 (* constr_id -> pattern *)
-constr_pattern: c=constr_id R_ARROW p=pattern { (c, p) }
+constr_pattern: cp=separated_pair(constr_id, R_ARROW, pattern) { cp }
 
 (* two or more contr_id -> pattern ; ... *)
 constr_patterns:
