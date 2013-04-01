@@ -40,8 +40,6 @@ constr_id: c=CONSTR_ID { CIdentifier(c) }
 
 (* -- Possibly empty -- *)
 
-definitions: l=list(definition) { l }
-
 plus_constr_list: l=separated_list(PLUS, constr) { l }
 star_constr_list: l=separated_list(STAR, constr) { l }
 
