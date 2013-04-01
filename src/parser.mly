@@ -67,8 +67,7 @@ star_constr_list: l=separated_list(STAR, constr) { l }
 
 definition:
 (** type definitions *)
-      TYPE t1=type_id                                       EQ t2=typ { DType(t1, [], t2) }
-    | TYPE t1=type_id tl=delimited(L_PAREN, types, R_PAREN) EQ t2=typ { DType(t1, tl, t2) }
+      TYPE t1=type_id tl=delimited(L_PAREN, types, R_PAREN) EQ t2=typ { DType(t1, tl, t2) }
 (** variable definitions *)
     | v=vdefinition { DVal(v) }
 
@@ -171,13 +170,12 @@ pattern:
 (** == Types == *)
 
 typ:
-    ti=type_id                                          { TVar(ti, [])   }
-  | ti=type_id tl=delimited(L_PAREN, types, R_PAREN)    { TVar(ti, tl)   }
+    ti=type_id tl=delimited(L_PAREN, types, R_PAREN)    { TVar(ti, tl)   }
   | t1=typ R_ARROW t2=typ                               { TArrow(t1, t2) }
   | p=delimited(L_BRACKET, plus_constr_list, R_BRACKET) { TSum(p)        }
   | p=delimited(L_BRACKET, star_constr_list, R_BRACKET) { TProd(p)       }
   | REC ti=type_id IS t=typ                             { TRec(ti, t)    }
   | t=delimited(L_PAREN, typ, R_PAREN)                  { t              }
 
-types: l=separated_nonempty_list(COMMA, type_id) { l }
+types: l=separated_list(COMMA, type_id) { l }
 
