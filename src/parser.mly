@@ -39,7 +39,8 @@ input:
 (** == Bindings == *)
 
 binding:  a=argument_identifier t=option(preceded(COLON, typ)) { Binding(a, t) }
-bindings: l=nonempty_list(delimited(L_PAREN, binding, R_PAREN)) { l }
+bindings: l=list(delimited(L_PAREN, binding, R_PAREN)) { l }
+nonempty_bindings: l=nonempty_list(delimited(L_PAREN, binding, R_PAREN)) { l }
 
 
 (** == Branches = *)
@@ -74,13 +75,13 @@ definition:
 vdefinition:
       VAL b=binding EQ e=expr { Simple(b, e) }
 (** function definitions *)
-    | DEF v=var_id bl=bindings COLON t=typ EQ e=expr w=with_list
+    | DEF v=var_id bl=nonempty_bindings COLON t=typ EQ e=expr w=with_list
       { MutuallyRecursive((Binding(Named(v), None), mk_fundef bl (Some t) e)::w) }
 
 with_list: l=nonempty_list(with_st) { l }
 
 with_st:
-      WITH v=var_id bl=bindings COLON t=typ EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
+      WITH v=var_id bl=nonempty_bindings COLON t=typ EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
 
 
 (** == Expressions == *)
