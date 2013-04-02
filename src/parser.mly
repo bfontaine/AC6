@@ -26,6 +26,16 @@
 
 %start<AST.program> input
 
+%left EQ
+%left VAL
+%left EXPR_EXPR
+
+%right OR
+%right AND
+
+%nonassoc THEN
+%nonassoc ELSE
+%nonassoc WHERE
 
 %%
 
@@ -97,7 +107,7 @@ expr:
   | e1=expr SEMICOLON e2=expr                                                             { ESeq([e1; e2])           }
   | v=vdefinition IN e=expr                                                               { EDef(v, e)               }
   | e=expr WHERE v=vdefinition END                                                        { EDef(v, e)               }
-  | e1=expr e2=expr                                                                       { EApp(e1, e2)             }
+  | e1=expr e2=expr %prec EXPR_EXPR                                                       { EApp(e1, e2)             }
   | e1=expr DOT e2=expr                                                                   { EApp(e2, e1)             }
 (*| e1=expr o=op e2=expr                                                                  { TODO                     }
   | u=unop e=expr                                                                         { TODO                     } *)
