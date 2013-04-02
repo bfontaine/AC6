@@ -31,10 +31,10 @@ rule main = parse
 | ']'           { R_SQUARE }
 | '+'           { PLUS }
 | '*'           { STAR }
+| '='           { EQ } (*
 | '-'           { MINUS }
 | '/'           { SLASH }
 | '%'           { PERCENT }
-| '='           { EQ }
 | ":="          { ASSIGN }
 | "&&"          { DBL_AND }
 | "||"          { DBL_PIPE }
@@ -43,7 +43,7 @@ rule main = parse
 | "!="          { NEG_EQ }
 | '<'           { LT }
 | '>'           { GT }
-| '~'           { TILDE }
+| '~'           { TILDE } *)
 | ':'           { COLON }   
 | ';'           { SEMICOLON }
 | '.'           { DOT }
