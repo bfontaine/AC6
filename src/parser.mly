@@ -49,6 +49,7 @@
 %left VAL
 
 %nonassoc DO
+%nonassoc IF
 %nonassoc THEN
 %nonassoc ELSE
 %nonassoc WHERE
