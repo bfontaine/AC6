@@ -26,16 +26,37 @@
 
 %start<AST.program> input
 
-%left EQ
-%left VAL
-%left EXPR_EXPR
+%nonassoc CONSTR_ID VAR_ID STR CHAR INT
 
+%nonassoc L_PAREN
+
+%nonassoc DEF FUN CASE AT
+
+%right IN
+
+%left NOT
 %right OR
 %right AND
 
+%nonassoc IS
+
+%right DBL_R_ARROW
+%right R_ARROW
+
+%right SEMICOLON
+
+%left EQ
+%left VAL
+
+%nonassoc DO
 %nonassoc THEN
 %nonassoc ELSE
 %nonassoc WHERE
+
+%left DOT
+
+(* highest priority *)
+%right EXPR_EXPR
 
 %%
 
