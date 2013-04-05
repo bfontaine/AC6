@@ -31,7 +31,7 @@ rule main = parse
 | ']'           { R_SQUARE }
 | '+'           { PLUS }
 | '*'           { STAR }
-| '='           { EQ } (*
+| '='           { EQ }
 | '-'           { MINUS }
 | '/'           { SLASH }
 | '%'           { PERCENT }
@@ -43,7 +43,7 @@ rule main = parse
 | "!="          { NEG_EQ }
 | '<'           { LT }
 | '>'           { GT }
-| '~'           { TILDE } *)
+| '~'           { TILDE }
 | ':'           { COLON }   
 | ';'           { SEMICOLON }
 | '.'           { DOT }
