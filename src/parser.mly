@@ -21,8 +21,8 @@
 %token <string> TYPE_ID
 %token <string> CONSTR_ID
 %token PIPE L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
-%token PLUS STAR EQ MINUS SLASH PERCENT ASSIGN
-%token DBL_AND DBL_PIPE LT_EQ GT_EQ NEG_EQ LT GT
+%token PLUS STAR EQ MINUS SLASH PERCENT COLON_EQ
+%token ANDAND PIPEPIPE LE GE NE LT GT
 %token TILDE COLON SEMICOLON DOT COMMA UNDERSC ZERO
 %token DBL_R_ARROW R_ARROW L_ARROW
 %token IF ELSE THEN FUN DO CASE DEF WITH AT IN WHERE END
@@ -48,13 +48,16 @@
 %right SEMICOLON
 
 %left EQ
-%left VAL
+%nonassoc VAL
+
+%left ASSIGN
 
 %nonassoc DO
 %nonassoc IF
-%nonassoc THEN
 %nonassoc ELSE
 %nonassoc WHERE
+
+%left IFTHEN
 
 (* binary operators *)
 %left BINOP
@@ -64,7 +67,7 @@
 
 (* highest priority *)
 %right EXPR_EXPR
-%left DOT
+%left EXPR_DOT_EXPR
 
 %start<AST.program> input
 
@@ -119,7 +122,7 @@ definition:
     | v=vdefinition { DVal(v) }
 
 vdefinition:
-      VAL b=binding EQ e=expr { Simple(b, e) }
+      VAL b=binding EQ e=expr %prec ASSIGN { Simple(b, e) }
 (** function definitions *)
     | DEF v=var_id bl=bindings COLON t=typ EQ e=expr w=with_list
       { MutuallyRecursive((Binding(Named(v), None), mk_fundef bl (Some t) e)::w) }
@@ -147,13 +150,13 @@ expr:
   | e1=expr SEMICOLON e2=expr                           { ESeq([e1; e2])           }
   | v=vdefinition IN e=expr                             { EDef(v, e)               }
   | e=expr WHERE v=vdefinition END                      { EDef(v, e)               }
-  | e1=expr DOT e2=expr                                 { EApp(e2, e1)             }
+  | e1=expr DOT e2=expr %prec EXPR_DOT_EXPR             { EApp(e2, e1)             }
   | e1=expr o=binop e2=expr %prec BINOP                 { mk_binop e1 o e2         }
   | u=unop e=expr %prec UNOP                            { mk_unop u e              }
   | CASE t=option(preceded(AT, typ))
       b=delimited(L_BRACKET, branch_list, R_BRACKET)    { ECase(t, b)              }
   | IF cond=expr THEN e1=expr ELSE e2=expr              { mk_ifthenelse cond e1 e2 }
-  | IF cond=expr THEN e1=expr                           { mk_ifthen cond e1        }
+  | IF cond=expr THEN e1=expr              %prec IFTHEN { mk_ifthen cond e1        }
   | FUN bl=bindings
       t=option(preceded(COLON, typ)) DBL_R_ARROW e=expr { mk_fun bl t e            }
   | DO e=delimited(L_BRACKET, expr, R_BRACKET)          { mk_do e                  }
@@ -183,14 +186,14 @@ binop:
   | SLASH    { slash    }
   | PERCENT  { percent  }
   | EQ       { eq       }
-  | ASSIGN   { coloneq  }
-  | DBL_AND  { andand   }
-  | DBL_PIPE { pipepipe }
-  | LT_EQ    { le       }
-  | GT_EQ    { ge       }
+  | COLON_EQ { coloneq  }
+  | ANDAND   { andand   }
+  | PIPEPIPE { pipepipe }
+  | LE       { le       }
+  | GE       { ge       }
   | LT       { lt       }
   | GT       { gt       }
-  | NEG_EQ   { bangeq   }
+  | NE       { bangeq   }
 
 (** === Unary Operations === *)
 
