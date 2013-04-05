@@ -147,7 +147,6 @@ expr:
   | e1=expr SEMICOLON e2=expr                           { ESeq([e1; e2])           }
   | v=vdefinition IN e=expr                             { EDef(v, e)               }
   | e=expr WHERE v=vdefinition END                      { EDef(v, e)               }
-  | e1=expr e2=expr %prec EXPR_EXPR                     { EApp(e1, e2)             }
   | e1=expr DOT e2=expr                                 { EApp(e2, e1)             }
   | e1=expr o=binop e2=expr %prec BINOP                 { mk_binop e1 o e2         }
   | u=unop e=expr %prec UNOP                            { mk_unop u e              }
@@ -158,6 +157,7 @@ expr:
   | FUN bl=bindings
       t=option(preceded(COLON, typ)) DBL_R_ARROW e=expr { mk_fun bl t e            }
   | DO e=delimited(L_BRACKET, expr, R_BRACKET)          { mk_do e                  }
+  | e1=expr e2=expr %prec EXPR_EXPR                     { EApp(e1, e2)             }
 
 
 (** == Identifiers == *)
@@ -197,7 +197,6 @@ binop:
 unop:
     MINUS { negate }
   | TILDE { boolean_not }
-
 
 (** == Patterns == *)
 
