@@ -7,6 +7,9 @@
 
   let parse_error = Error.error "during parsing"
 
+  let mk_binop e1 o e2 = EApp(EApp(o, e1), e2)
+  let mk_unop o e = EApp(o, e)
+
 %}
 
 
@@ -146,8 +149,8 @@ expr:
   | e=expr WHERE v=vdefinition END                      { EDef(v, e)               }
   | e1=expr e2=expr %prec EXPR_EXPR                     { EApp(e1, e2)             }
   | e1=expr DOT e2=expr                                 { EApp(e2, e1)             }
-  | e1=expr o=op e2=expr %prec BINOP                    { EApp(EApp(o, e1), e2)    }
-  | u=unop e=expr %prec UNOP                            { EApp(u, e)               }
+  | e1=expr o=binop e2=expr %prec BINOP                 { mk_binop e1 o e2         }
+  | u=unop e=expr %prec UNOP                            { mk_unop u e              }
   | CASE t=option(preceded(AT, typ))
       b=delimited(L_BRACKET, branch_list, R_BRACKET)    { ECase(t, b)              }
   | IF cond=expr THEN e1=expr ELSE e2=expr              { mk_ifthenelse cond e1 e2 }
@@ -173,7 +176,7 @@ type_ids: l=separated_list(COMMA, type_id) { l }
 
 (** === Binary Operations === *)
 
-op:
+binop:
     PLUS     { plus     }
   | MINUS    { minus    }
   | STAR     { star     }
