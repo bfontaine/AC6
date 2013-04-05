@@ -7,7 +7,7 @@ let resume_if_error () = exit_flag := false
 exception Error of Position.t list * string
 
 let print_error positions msg =
-  Printf.sprintf "%s%s"
+  Printf.sprintf "%s%s\n"
     (String.concat "\n"
        (List.map (fun p -> Position.string_of_pos p ^": ") positions))
     msg
