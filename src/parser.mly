@@ -31,16 +31,16 @@
 
 (**
  * Tokens that don't need priority rules:
- * - END, IS, REC, TYPE, WITH
- * - COLON, COLON_EQ, COMMA, PIPE
- * - R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
- * - UNDERSC, ZERO
+ * - END IS REC TYPE WITH
+ * - COLON COMMA PIPE
+ * - R_PAREN R_BRACKET L_SQUARE R_SQUARE
+ * - UNDERSC ZERO
  *
  **)
 
 %nonassoc CONSTR_ID CHAR INT STR ID
-%nonassoc L_PAREN
-%nonassoc ASSIGN AT CASE DEF DO FUN IN REC_TYPE VAL WHERE
+%nonassoc L_BRACKET L_PAREN
+%nonassoc ASSIGN AT CASE COLON_EQ DEF DO FUN IN REC_TYPE VAL WHERE
 
 %right SEMICOLON
 %nonassoc IF
@@ -64,6 +64,7 @@
 %right EXPR_EXPR DOT
 
 %nonassoc TILDE UNOP
+
 
 %%
 
