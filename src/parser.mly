@@ -28,7 +28,7 @@
 %token VAL IS TYPE REC OR AND NOT
 
 
-%start<AST.program> input
+%start<AST.program> program
 
 (**
  * Tokens that don't need priority rules:
@@ -40,16 +40,15 @@
  **)
 
 %nonassoc CONSTR_ID CHAR INT STR VAR_ID
-
 %nonassoc L_PAREN
-
 %nonassoc ASSIGN AT CASE DEF DO FUN IN REC_TYPE VAL WHERE
 
 %right SEMICOLON
-%nonassoc IF THEN ELSE
+%nonassoc IF
+%nonassoc THEN
+%nonassoc ELSE
 
 %right R_ARROW DBL_R_ARROW L_ARROW
-
 %right EQ NE LE LT GE GT
 
 %left PERCENT
@@ -62,9 +61,10 @@
 %left OR
 %left AND
 
+
 %right EXPR_EXPR DOT
 
-%nonassoc TILDE UMINUS
+%nonassoc TILDE UNOP
 
 %%
 
@@ -87,7 +87,7 @@
 (**
  * a program is a list of definitions
  *)
-input:
+program:
   (* [ aDefinition aDefinition ... ] *)
     p=definition* EOF { p }
 
@@ -189,7 +189,7 @@ expr:
       e=sq_delimited(expr)?             { ESum(c, t, e)  }
 
   (* [ at aType ] { aConstrId <- expr [, aConstrId <- expr, ... ] } *)
-  | t=preceded(AT, typ)?
+  | t=ioption(preceded(AT, typ))
       cl=br_delimited(constr_defs)      { EProd(t, cl)   }    
 
   (* ( expr ) *)
@@ -219,10 +219,10 @@ expr:
   | e1=expr o=binop e2=expr                      { mk_binop e1 o e2         }
 
   (* -expr *)
-  | e=preceded(MINUS, expr) %prec UMINUS         { EApp(negate, e)          }
+  | e=preceded(MINUS, expr) %prec UNOP           { EApp(negate, e)          }
 
   (* ~expr *)
-  | e=preceded(TILDE, expr)                      { EApp(boolean_not, e)     }
+  | e=preceded(TILDE, expr) %prec UNOP           { EApp(boolean_not, e)     }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?

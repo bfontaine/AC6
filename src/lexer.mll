@@ -72,8 +72,8 @@ rule main = parse
 | "or"           { OR }
 | "and"          { AND }
 | "not"          { NOT }
-| integer as x   { INT x }
-| character as x { CHAR x }
+| integer as x   { INT(int_of_string x) }
+| character as x { CHAR x.[0] }
 | str as x       { STR x }
 | var_id as x    { VAR_ID x }
 | type_id as x   { TYPE_ID x }
