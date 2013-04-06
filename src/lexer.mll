@@ -3,17 +3,17 @@
  open Parser
  }
 
-let d = ['0'-'9']
-let w = ['A'-'Z' 'a'-'z' '0'-'9' '_']
-let h = ['0'-'9' 'a'-'f' 'A'-'F']
+let digit  = ['0'-'9']
+let letter = ['A'-'Z' 'a'-'z' '0'-'9' '_']
+let hex    = ['0'-'9' 'a'-'f' 'A'-'F']
 
-let var_id = ['a'-'z'] w*         (** variables *)
-let constr_id = ['A'-'Z' '_'] w*  (** constructors *)
-let type_id = var_id              (** types *)
-let integer = d+ | "0x" h+ | "0b" ['0' '1']+  (** integer litterals *)
+let var_id = ['a'-'z'] letter*         (** variables *)
+let constr_id = ['A'-'Z' '_'] letter*  (** constructors *)
+let type_id = var_id                   (** types *)
+let integer = digit+ | "0x" hex+ | "0b" ['0' '1']+  (** integer litterals *)
 let atom =
-    "\\" ['0' '1'] d d | '2' ['0'-'4'] d | "25" ['0'-'5']
-  | "\\0x" h h
+    "\\" ['0' '1'] digit digit | '2' ['0'-'4'] digit | "25" ['0'-'5']
+  | "\\0x" hex hex
   | ['\x20'-'\x7E'] (* printable chars *)
   | '\\' | '\'' | '\n' | '\t' | '\b' | '\r'
 let character = '\'' atom '\''   (** char litterals *)
