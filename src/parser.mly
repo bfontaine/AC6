@@ -8,7 +8,6 @@
   let parse_error = Error.error "during parsing"
 
   let mk_binop e1 o e2 = EApp(EApp(o, e1), e2)
-  let mk_unop o e = EApp(o, e)
 
 %}
 
@@ -81,25 +80,25 @@
  *)
 input:
   (* [ aDefinition aDefinition ... ] *)
-    p=list(definition) EOF { p }
+    p=definition* EOF { p }
 
 
 (** == Bindings == *)
 
 binding:
   (* argId [ : aType ] *)
-    a=argument_identifier t=option(preceded(COLON, typ)) { Binding(a, t) }
+    a=argument_identifier t=preceded(COLON, typ)? { Binding(a, t) }
 
 bindings:
   (* [ (binding) (binding) (binding) ... ] *)
-    l=list(delimited(L_PAREN, binding, R_PAREN)) { l }
+    l=delimited(L_PAREN, binding, R_PAREN)* { l }
 
 
 (** == Branches = *)
 
 branch_list:
   (* [ | ] aBranch [ | aBranch | aBranch | ... ] *)
-    option(PIPE) l=separated_nonempty_list(PIPE, branch) { l }
+    PIPE? l=separated_nonempty_list(PIPE, branch) { l }
 
 branch:
   (* aPattern => expr *)
@@ -114,7 +113,7 @@ constr_id:
 
 constr:
   (* aConstr [ type ] *)
-    c=constr_id t=option(typ) { TConstructor(c, t) }
+    c=constr_id t=typ? { TConstructor(c, t) }
 
 constr_def:
   (* aConstr [ <- expr ] *)
@@ -153,7 +152,7 @@ vdefinition:
 
 with_list:
   (* [ with ... with ... ... ] *)
-    l=list(with_st) { l }
+    l=with_st* { l }
 
 with_st:
   (* with aVarId [ (binding) (binding) ... ] : aType = expr *)
@@ -177,11 +176,11 @@ expr:
   | v=var_id                                            { EVar(v)                  }
 
   (* constr_id [ at aType ] [ \[ expr \] ] *)
-  | c=constr_id t=option(preceded(AT, typ))
-      e=option(delimited(L_SQUARE, expr, R_SQUARE))     { ESum(c, t, e)            }
+  | c=constr_id t=preceded(AT, typ)?
+      e=delimited(L_SQUARE, expr, R_SQUARE)?            { ESum(c, t, e)            }
 
   (* [ at aType ] { aConstrId <- expr [, aConstrId <- expr, ... ] } *)
-  | t=option(preceded(AT, typ))
+  | t=preceded(AT, typ)?
       cl=delimited(L_BRACKET, constr_defs, R_BRACKET)   { EProd(t, cl)             }    
 
   (* ( expr ) *)
@@ -217,7 +216,7 @@ expr:
   | e=preceded(TILDE, expr) %prec UTILDE                { EApp(boolean_not, e)     }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
-  | CASE t=option(preceded(AT, typ))
+  | CASE t=preceded(AT, typ)?
       b=delimited(L_BRACKET, branch_list, R_BRACKET)    { ECase(t, b)              }
 
   (* if expr then expr else expr *)
@@ -228,7 +227,7 @@ expr:
 
   (* fun [ (binding) (binding) ... ] [ : aType ] => expr *)
   | FUN bl=bindings
-      t=option(preceded(COLON, typ)) DBL_R_ARROW e=expr { mk_fun bl t e            }
+      t=preceded(COLON, typ)? DBL_R_ARROW e=expr        { mk_fun bl t e            }
 
   (* do { expr } *)
   | DO e=delimited(L_BRACKET, expr, R_BRACKET)          { mk_do e                  }
@@ -303,7 +302,7 @@ binop:
 
 constr_pattern:
   (* aConstrId [ -> pattern ] *)
-    cp=pair(constr_id, option(preceded(R_ARROW, pattern))) { cp }
+    cp=pair(constr_id, preceded(R_ARROW, pattern)?) { cp }
 
 constr_patterns:
   (* aConstrId [ -> pattern ] [ ; aConstrId [ -> * pattern ] ; ... ] *)
@@ -311,11 +310,11 @@ constr_patterns:
 
 pattern:
   (* aConstrId [ at aType ] [ \[ pattern \] ] *)
-    c=constr_id t=option(preceded(AT, typ))
-      p=option(delimited(L_SQUARE, pattern, R_SQUARE))    { PSum(c, t, p) }
+    c=constr_id t=preceded(AT, typ)?
+      p=delimited(L_SQUARE, pattern, R_SQUARE)?           { PSum(c, t, p) }
 
   (* [ at aType ] { aConstrId [ -> pattern ] [ ; aConstrId [ -> pattern ] ; ... ] } *)
-  | t=option(preceded(AT, typ))
+  | t=preceded(AT, typ)?
       cp=delimited(L_BRACKET, constr_patterns, R_BRACKET) { PProd(t, cp)  }
 
   (* pattern or pattern *)
