@@ -36,9 +36,9 @@
 
 %right IN
 
-%left NOT
-%right OR
-%right AND
+%left OR
+%left AND
+%nonassoc NOT
 
 %nonassoc IS
 
@@ -53,191 +53,327 @@
 %left ASSIGN
 
 %nonassoc DO
-%nonassoc IF
-%nonassoc ELSE
+%nonassoc IF THEN ELSE
 %nonassoc WHERE
-
-%left IFTHEN
 
 (* binary operators *)
 %left BINOP
 
-(* unary operators *)
-%right UNOP
-
 (* highest priority *)
 %right EXPR_EXPR
 %left EXPR_DOT_EXPR
+
+%nonassoc UMINUS UTILDE
 
 %start<AST.program> input
 
 %%
 
 (**
+ * = Syntax of comments =
+ *
+ * [ e ] : optional 'e'
+ * \[ \] : litteral square brackets
+ **)
+
+(**
  * a program is a list of definitions
  *)
 input:
+  (* [ aDefinition aDefinition ... ] *)
     p=list(definition) EOF { p }
 
 
 (** == Bindings == *)
 
-binding:  a=argument_identifier t=option(preceded(COLON, typ)) { Binding(a, t) }
-bindings: l=list(delimited(L_PAREN, binding, R_PAREN)) { l }
+binding:
+  (* argId [ : aType ] *)
+    a=argument_identifier t=option(preceded(COLON, typ)) { Binding(a, t) }
+
+bindings:
+  (* [ (binding) (binding) (binding) ... ] *)
+    l=list(delimited(L_PAREN, binding, R_PAREN)) { l }
 
 
 (** == Branches = *)
 
-branch_list: option(PIPE) l=separated_nonempty_list(PIPE, branch) { l }
+branch_list:
+  (* [ | ] aBranch [ | aBranch | aBranch | ... ] *)
+    option(PIPE) l=separated_nonempty_list(PIPE, branch) { l }
 
-branch: p=pattern DBL_R_ARROW e=expr { Branch(p, e) }
+branch:
+  (* aPattern => expr *)
+    p=pattern DBL_R_ARROW e=expr { Branch(p, e) }
 
 
 (** == Constructors == *)
 
-(* constr_id [type] *)
-constr: c=constr_id t=option(typ) { TConstructor(c, t) }
+constr_id:
+  (* aConstrId *)
+    c=CONSTR_ID { CIdentifier(c) }
 
-(* contr_id <- expr
- 
- In the grammar, the 'expr' is not optional, but it is in AST.mli,
- so we use 'option(expr)'.
- 
- *)
-constr_def: ce=pair(constr_id, option(preceded(L_ARROW , expr))) { ce }
-constr_defs: l=separated_nonempty_list(SEMICOLON, constr_def) { l }
+constr:
+  (* aConstr [ type ] *)
+    c=constr_id t=option(typ) { TConstructor(c, t) }
 
-(* two or more 'constr' *)
-plus_constr_list: c=constr PLUS l=separated_nonempty_list(PLUS, constr) { c::l }
-star_constr_list: c=constr STAR l=separated_nonempty_list(STAR, constr) { c::l }
+constr_def:
+  (* aConstr [ <- expr ] *)
+    c=constr_id e=preceded(L_ARROW , expr) { (c, Some e) }
+
+constr_defs:
+  (* aConstrDef [ ; aConstrDef ; aConstrDef ; ... ] *)
+    l=separated_nonempty_list(SEMICOLON, constr_def) { l }
+
+plus_constr_list:
+  (* aConstr + aConstr [ + aConstr + aConstr ... ] *)
+    c=constr PLUS l=separated_nonempty_list(PLUS, constr) { c::l }
+
+star_constr_list:
+  (* aConstr * aConstr [ * aConstr * aConstr ... ] *)
+    c=constr STAR l=separated_nonempty_list(STAR, constr) { c::l }
 
 
 (** == Definitions == *)
 
 definition:
-(** type definitions *)
-      TYPE t1=type_id tl=delimited(LT, type_ids, GT)
-        EQ t2=typ { DType(t1, tl, t2) }
-(** variable definitions *)
-    | v=vdefinition { DVal(v) }
+  (* type aTypeId [ < aTypeId [ , aTypeId, ... ] > ] = aType *)
+    TYPE t1=type_id tl=delimited_list(LT, type_ids, GT)
+      EQ t2=typ { DType(t1, tl, t2) }
+
+  (* aVDefinition *)
+  | v=vdefinition { DVal(v) }
 
 vdefinition:
-      VAL b=binding EQ e=expr %prec ASSIGN { Simple(b, e) }
-(** function definitions *)
-    | DEF v=var_id bl=bindings COLON t=typ EQ e=expr w=with_list
-      { MutuallyRecursive((Binding(Named(v), None), mk_fundef bl (Some t) e)::w) }
+  (* val aBinding = expr *) 
+    VAL b=binding EQ e=expr %prec ASSIGN { Simple(b, e) }
 
-with_list: l=nonempty_list(with_st) { l }
+  (* def aVarId [ (binding) (binding) ... ] : aType = expr [ with ... with ... ] *)
+  | DEF v=var_id bl=bindings COLON t=typ EQ e=expr w=with_list
+    { MutuallyRecursive((Binding(Named(v), None), mk_fundef bl (Some t) e)::w) }
+
+with_list:
+  (* [ with ... with ... ... ] *)
+    l=list(with_st) { l }
 
 with_st:
-      WITH v=var_id bl=bindings COLON t=typ
-        EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
+  (* with aVarId [ (binding) (binding) ... ] : aType = expr *)
+    WITH v=var_id bl=bindings COLON t=typ
+      EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
 
 
 (** == Expressions == *)
 
 expr:
+  (* anInt *)
     i=INT                                               { EInt(i)                  }
+
+  (* aChar *)
   | c=CHAR                                              { EChar(c)                 }
+
+  (* aString *)
   | s=STR                                               { EString(s)               }
+
+  (* aVarId *)
   | v=var_id                                            { EVar(v)                  }
+
+  (* constr_id [ at aType ] [ \[ expr \] ] *)
   | c=constr_id t=option(preceded(AT, typ))
       e=option(delimited(L_SQUARE, expr, R_SQUARE))     { ESum(c, t, e)            }
+
+  (* [ at aType ] { aConstrId <- expr [, aConstrId <- expr, ... ] } *)
   | t=option(preceded(AT, typ))
-      cl=delimited(L_BRACKET, constr_defs, R_BRACKET)   { EProd(t, cl)             }
+      cl=delimited(L_BRACKET, constr_defs, R_BRACKET)   { EProd(t, cl)             }    
+
+  (* ( expr ) *)
   | e=delimited(L_PAREN, expr, R_PAREN)                 { e                        }
+
+  (* ( expr : type ) *)
   | L_PAREN e=expr COLON t=typ R_PAREN                  { EAnnot(e, t)             }
+
+  (* expr ; expr *)
   | e1=expr SEMICOLON e2=expr                           { ESeq([e1; e2])           }
+
+  (* aVDefinition in expr *)
   | v=vdefinition IN e=expr                             { EDef(v, e)               }
+
+  (* expr where aVDefinition end *)
   | e=expr WHERE v=vdefinition END                      { EDef(v, e)               }
+
+  (* expr.expr *)
   | e1=expr DOT e2=expr %prec EXPR_DOT_EXPR             { EApp(e2, e1)             }
+
+  (*    expr + expr
+     or expr - expr
+     or expr * expr
+     or expr / expr
+     or expr = expr
+     or ...         *)
   | e1=expr o=binop e2=expr %prec BINOP                 { mk_binop e1 o e2         }
-  | u=unop e=expr %prec UNOP                            { mk_unop u e              }
+
+  (* -expr *)
+  | e=preceded(MINUS, expr) %prec UMINUS                { EApp(negate, e)          }
+
+  (* ~expr *)
+  | e=preceded(TILDE, expr) %prec UTILDE                { EApp(boolean_not, e)     }
+
+  (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=option(preceded(AT, typ))
       b=delimited(L_BRACKET, branch_list, R_BRACKET)    { ECase(t, b)              }
+
+  (* if expr then expr else expr *)
   | IF cond=expr THEN e1=expr ELSE e2=expr              { mk_ifthenelse cond e1 e2 }
-  | IF cond=expr THEN e1=expr              %prec IFTHEN { mk_ifthen cond e1        }
+
+  (* if expr then expr *)
+  | IF cond=expr THEN e1=expr                           { mk_ifthen cond e1        }
+
+  (* fun [ (binding) (binding) ... ] [ : aType ] => expr *)
   | FUN bl=bindings
       t=option(preceded(COLON, typ)) DBL_R_ARROW e=expr { mk_fun bl t e            }
+
+  (* do { expr } *)
   | DO e=delimited(L_BRACKET, expr, R_BRACKET)          { mk_do e                  }
+
+  (* expr expr *)
   | e1=expr e2=expr %prec EXPR_EXPR                     { EApp(e1, e2)             }
 
 
 (** == Identifiers == *)
 
 argument_identifier:
-      v=var_id { Named(v) }
-    | UNDERSC  { Unnamed  }
+  (* aVarId *) 
+    v=var_id { Named(v) }
 
-constr_id: c=CONSTR_ID { CIdentifier(c) }
-type_id: t=TYPE_ID     { TIdentifier(t) }
-var_id: v=VAR_ID       { Identifier(v)  }
+  (* _ *)
+  | UNDERSC  { Unnamed  }
 
-type_ids: l=separated_list(COMMA, type_id) { l }
+var_id:
+  (* aVarId *)
+    v=VAR_ID       { Identifier(v)  }
 
 (** == Operations == *)
 
 (** === Binary Operations === *)
 
 binop:
+  (* + *)
     PLUS     { plus     }
+
+  (* - *)
   | MINUS    { minus    }
+  
+  (* * *)
   | STAR     { star     }
+  
+  (* / *)
   | SLASH    { slash    }
+  
+  (* % *)
   | PERCENT  { percent  }
+  
+  (* = *)
   | EQ       { eq       }
+  
+  (* := *)
   | COLON_EQ { coloneq  }
+  
+  (* && *)
   | ANDAND   { andand   }
+  
+  (* || *)
   | PIPEPIPE { pipepipe }
+  
+  (* <= *)
   | LE       { le       }
+  
+  (* >= *)
   | GE       { ge       }
+  
+  (* < *)
   | LT       { lt       }
+  
+  (* > *)
   | GT       { gt       }
+  
+  (* != *)
   | NE       { bangeq   }
 
 (** === Unary Operations === *)
 
-unop:
-    MINUS { negate }
-  | TILDE { boolean_not }
-
 (** == Patterns == *)
 
-(* constr_id -> pattern *)
-constr_pattern: cp=separated_pair(constr_id, R_ARROW, option(pattern)) { cp }
+constr_pattern:
+  (* aConstrId [ -> pattern ] *)
+    cp=pair(constr_id, option(preceded(R_ARROW, pattern))) { cp }
 
-(* two or more contr_id -> pattern ; ... *)
 constr_patterns:
-    cp=constr_pattern SEMICOLON
-      l=separated_nonempty_list(SEMICOLON, constr_pattern) { cp::l }
+  (* aConstrId [ -> pattern ] [ ; aConstrId [ -> * pattern ] ; ... ] *)
+    l=separated_nonempty_list(SEMICOLON, constr_pattern) { l }
 
 pattern:
-  | c=constr_id t=option(preceded(AT, typ))
+  (* aConstrId [ at aType ] [ \[ pattern \] ] *)
+    c=constr_id t=option(preceded(AT, typ))
       p=option(delimited(L_SQUARE, pattern, R_SQUARE))    { PSum(c, t, p) }
+
+  (* [ at aType ] { aConstrId [ -> pattern ] [ ; aConstrId [ -> pattern ] ; ... ] } *)
   | t=option(preceded(AT, typ))
       cp=delimited(L_BRACKET, constr_patterns, R_BRACKET) { PProd(t, cp)  }
+
+  (* pattern or pattern *)
   | p1=pattern OR p2=pattern                              { POr(p1, p2)   }
+
+  (* pattern and pattern *)
   | p1=pattern AND p2=pattern                             { PAnd(p1, p2)  }
+
+  (* not pattern *)
   | NOT p=pattern                                         { PNot(p)       }
-  | ZERO                                                  { PZero         }
+
+  (* aVarId *)
   | v=var_id                                              { PVar(v)       }
+
+  (* 0 *)
+  | ZERO                                                  { PZero         }
+
+  (* _ *)
   | UNDERSC                                               { POne          }
 
 
 (** == Types == *)
 
+type_id:
+  (* aTypeId *)
+    t=TYPE_ID     { TIdentifier(t) }
+
+type_ids:
+  (* aTypeId [, aTypeId, aTypeId, ... ] *)
+    l=separated_nonempty_list(COMMA, type_id) { l }
+
+%inline delimited_list(BEGIN, XLIST, END):
+  (* [ BEGIN XLIST END ] *)
+    xl = loption(delimited(BEGIN, XLIST, END)) { xl }
+
 typ:
-    ti=type_id tl=delimited(LT, types, GT)              { TVar(ti, tl)   }
+  (* aTypeId [ < aType [ , aType, ... ] > ] *)
+    ti=type_id tl=delimited_list(LT, types, GT)         { TVar(ti, tl)   }
+
+  (* aType -> aType *)
   | t1=typ R_ARROW t2=typ                               { TArrow(t1, t2) }
+
+  (* { contrId [ aType ] + constrId [ aType ] [ + ... ] } *)
   | p=delimited(L_BRACKET, plus_constr_list, R_BRACKET) { TSum(p)        }
+
+  (* { contrId [ aType ] * constrId [ aType ] [ * ... ] } *)
   | p=delimited(L_BRACKET, star_constr_list, R_BRACKET) { TProd(p)       }
-  (* The grammar allow to write '{ constr_id }', but the parser don't know
-   * if it has to parse it as a TSum or a TProd. With the following rule,
-   * we explicitly say that it should parse it as a TSum.
-   *)
+
+  (* { constrId [ aType ] } *)
   | p=delimited(L_BRACKET, constr, R_BRACKET)           { TSum([p])      }
+
+  (* rec aTypeId is aType *)
   | REC ti=type_id IS t=typ                             { TRec(ti, t)    }
+
+  (* (aType) *)
   | t=delimited(L_PAREN, typ, R_PAREN)                  { t              }
 
-types: l=separated_list(COMMA, typ) { l }
+types:
+  (* aType, [ aType, aType, ... ] *)
+    l=separated_nonempty_list(COMMA, typ) { l }
 
