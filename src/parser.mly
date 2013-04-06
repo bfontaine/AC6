@@ -60,6 +60,7 @@
 
 %left OR
 %left AND
+%nonassoc NOT
 
 %right EXPR_EXPR DOT
 
@@ -340,6 +341,9 @@ pattern:
   (* not pattern *)
   | NOT p=pattern                      { PNot(p)       }
 
+  (* (pattern) *)
+  | p=p_delimited(pattern)             { p             }
+
   (* aVarId *)
   | v=var_id                           { PVar(v)       }
 
@@ -354,7 +358,7 @@ pattern:
 
 type_id:
   (* aTypeId *)
-    t=ID     { TIdentifier(t) }
+    t=ID { TIdentifier(t) }
 
 %inline diples_comma_separated_list(X):
   (* [ < X [, X, X, ... ] > ] *)
