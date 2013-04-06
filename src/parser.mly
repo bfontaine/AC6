@@ -222,33 +222,33 @@ expr:
      or expr / expr
      or expr = expr
      or ...         *)
-  | e1=expr o=binop e2=expr                      { mk_binop e1 o e2         }
+  | e1=expr o=binop e2=expr                      { mk_binop e1 o e2      }
 
   (* -expr *)
-  | e=preceded(MINUS, expr) %prec UNOP           { EApp(negate, e)          }
+  | e=preceded(MINUS, expr) %prec UNOP           { EApp(negate, e)       }
 
   (* ~expr *)
-  | e=preceded(TILDE, expr) %prec UNOP           { EApp(boolean_not, e)     }
+  | e=preceded(TILDE, expr) %prec UNOP           { EApp(boolean_not, e)  }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?
-      b=br_delimited(branch_list)                { ECase(t, b)              }
+      b=br_delimited(branch_list)                { ECase(t, b)           }
 
   (* if expr then expr else expr *)
-  | IF cond=expr THEN e1=expr ELSE e2=expr       { mk_ifthenelse cond e1 e2 }
+  | IF c=expr THEN e1=expr ELSE e2=expr          { mk_ifthenelse c e1 e2 }
 
   (* if expr then expr *)
-  | IF cond=expr THEN e1=expr                    { mk_ifthen cond e1        }
+  | IF c=expr THEN e1=expr                       { mk_ifthen c e1        }
 
   (* fun [ (binding) (binding) ... ] [ : aType ] => expr *)
   | FUN bl=bindings
-      t=preceded(COLON, typ)? DBL_R_ARROW e=expr { mk_fun bl t e            }
+      t=preceded(COLON, typ)? DBL_R_ARROW e=expr { mk_fun bl t e         }
 
   (* do { expr } *)
-  | DO e=br_delimited(expr)                      { mk_do e                  }
+  | DO e=br_delimited(expr)                      { mk_do e               }
 
   (* expr expr *)
-  | e1=expr e2=expr %prec EXPR_EXPR              { EApp(e1, e2)             }
+  | e1=expr e2=expr %prec EXPR_EXPR              { EApp(e1, e2)          }
 
 
 (** == Identifiers == *)
