@@ -40,7 +40,8 @@
 
 %nonassoc CONSTR_ID CHAR INT STR ID ZERO
 %nonassoc L_BRACKET L_PAREN
-%nonassoc ASSIGN AT CASE COLON_EQ DEF DO FUN IN REC_TYPE VAL WHERE
+%nonassoc WITH_ST
+%nonassoc ASSIGN AT CASE COLON_EQ DEF DO FUN IN REC_TYPE VAL VDEF WHERE
 
 %right SEMICOLON
 %nonassoc IF
@@ -154,8 +155,13 @@ vdefinition:
     VAL b=binding EQ e=expr %prec ASSIGN { Simple(b, e) }
 
   (* def aVarId [ (binding) (binding) ... ] : aType = expr [ with ... with ... ] *)
-  | DEF v=var_id bl=bindings COLON t=typ EQ e=expr w=with_list
-    { MutuallyRecursive((Binding(Named(v), None), mk_fundef bl (Some t) e)::w) }
+  | v=simple_vdef w=with_list { MutuallyRecursive(v::w) }
+
+(* this is just a vdefinition without 'with' statements *)
+simple_vdef:
+  (* def aVarId [ (binding) (binding) ... ] : aType = expr *)
+    DEF v=var_id bl=bindings COLON t=typ EQ e=expr %prec VDEF
+        { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
 
 with_list:
   (* [ with ... with ... ... ] *)
@@ -164,7 +170,7 @@ with_list:
 with_st:
   (* with aVarId [ (binding) (binding) ... ] : aType = expr *)
     WITH v=var_id bl=bindings COLON t=typ
-      EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
+      EQ e=expr %prec WITH_ST { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
 
 
 (** == Expressions == *)
