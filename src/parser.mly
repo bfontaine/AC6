@@ -34,11 +34,11 @@
  * - END IS REC TYPE WITH
  * - COLON COMMA PIPE
  * - R_PAREN R_BRACKET L_SQUARE R_SQUARE
- * - UNDERSC ZERO
+ * - UNDERSC
  *
  **)
 
-%nonassoc CONSTR_ID CHAR INT STR ID
+%nonassoc CONSTR_ID CHAR INT STR ID ZERO
 %nonassoc L_BRACKET L_PAREN
 %nonassoc ASSIGN AT CASE COLON_EQ DEF DO FUN IN REC_TYPE VAL WHERE
 
@@ -60,11 +60,9 @@
 %left OR
 %left AND
 
-
 %right EXPR_EXPR DOT
 
 %nonassoc TILDE UNOP
-
 
 %%
 
@@ -174,6 +172,7 @@ with_st:
 expr:
   (* anInt *)
     i=INT                               { EInt(i)        }
+  | ZERO                                { EInt(0)        }
 
   (* aChar *)
   | c=CHAR                              { EChar(c)       }
