@@ -16,8 +16,7 @@
 %token <int> INT
 %token <char> CHAR
 %token <string> STR
-%token <string> VAR_ID
-%token <string> TYPE_ID
+%token <string> ID
 %token <string> CONSTR_ID
 %token PIPE L_PAREN R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
 %token PLUS STAR EQ MINUS SLASH PERCENT COLON_EQ
@@ -32,14 +31,14 @@
 
 (**
  * Tokens that don't need priority rules:
- * - END, IS, REC, TYPE, TYPE_ID, WITH
+ * - END, IS, REC, TYPE, WITH
  * - COLON, COLON_EQ, COMMA, PIPE
  * - R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
  * - UNDERSC, ZERO
  *
  **)
 
-%nonassoc CONSTR_ID CHAR INT STR VAR_ID
+%nonassoc CONSTR_ID CHAR INT STR ID
 %nonassoc L_PAREN
 %nonassoc ASSIGN AT CASE DEF DO FUN IN REC_TYPE VAL WHERE
 
@@ -256,7 +255,7 @@ argument_identifier:
 
 var_id:
   (* aVarId *)
-    v=VAR_ID { Identifier(v)  }
+    v=ID { Identifier(v)  }
 
 (** == Operations == *)
 
@@ -349,7 +348,7 @@ pattern:
 
 type_id:
   (* aTypeId *)
-    t=TYPE_ID     { TIdentifier(t) }
+    t=ID     { TIdentifier(t) }
 
 %inline diples_comma_separated_list(X):
   (* [ < X [, X, X, ... ] > ] *)

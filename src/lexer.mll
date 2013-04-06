@@ -7,9 +7,8 @@ let digit  = ['0'-'9']
 let letter = ['A'-'Z' 'a'-'z' '0'-'9' '_']
 let hex    = ['0'-'9' 'a'-'f' 'A'-'F']
 
-let var_id = ['a'-'z'] letter*         (** variables *)
+let id = ['a'-'z'] letter*         (** variables & types *)
 let constr_id = ['A'-'Z' '_'] letter*  (** constructors *)
-let type_id = var_id                   (** types *)
 let integer = digit+ | "0x" hex+ | "0b" ['0' '1']+  (** integer litterals *)
 let atom =
     "\\" ['0' '1'] digit digit | '2' ['0'-'4'] digit | "25" ['0'-'5']
@@ -75,7 +74,6 @@ rule main = parse
 | integer as x   { INT(int_of_string x) }
 | character as x { CHAR x.[0] }
 | str as x       { STR x }
-| var_id as x    { VAR_ID x }
-| type_id as x   { TYPE_ID x }
+| id as x        { ID x }
 | constr_id as x { CONSTR_ID x }
 
