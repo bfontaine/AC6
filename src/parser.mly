@@ -27,44 +27,44 @@
 %token IF ELSE THEN FUN DO CASE DEF WITH AT IN WHERE END
 %token VAL IS TYPE REC OR AND NOT
 
-(* identifiers + litterals *)
-%nonassoc CONSTR_ID VAR_ID STR CHAR INT
+
+%start<AST.program> input
+
+(**
+ * Tokens that don't need priority rules:
+ * - END, IS, REC, TYPE, TYPE_ID, WITH
+ * - COLON, COLON_EQ, COMMA, PIPE
+ * - R_PAREN L_BRACKET R_BRACKET L_SQUARE R_SQUARE
+ * - UNDERSC, ZERO
+ *
+ **)
+
+%nonassoc CONSTR_ID CHAR INT STR VAR_ID
 
 %nonassoc L_PAREN
-%nonassoc DEF FUN CASE AT
 
-%right IN
+%nonassoc ASSIGN AT CASE DEF DO FUN IN VAL WHERE
+
+%right SEMICOLON
+%nonassoc IF THEN ELSE
+
+%right R_ARROW DBL_R_ARROW L_ARROW
+
+%right EQ NE LE LT GE GT
+
+%left PERCENT
+%left PLUS MINUS
+%left STAR SLASH
+
+%left ANDAND
+%left PIPEPIPE
 
 %left OR
 %left AND
-%nonassoc NOT
 
-%nonassoc IS
+%nonassoc TILDE UMINUS
 
-%right DBL_R_ARROW
-%right R_ARROW
-%left L_ARROW
-%right SEMICOLON
-
-%left EQ
-%nonassoc VAL
-
-%left ASSIGN
-
-%nonassoc DO
-%nonassoc IF THEN ELSE
-%nonassoc WHERE
-
-(* binary operators *)
-%left BINOP
-
-(* highest priority *)
-%right EXPR_EXPR
-%left EXPR_DOT_EXPR
-
-%nonassoc UMINUS UTILDE
-
-%start<AST.program> input
+%right EXPR_EXPR DOT
 
 %%
 
@@ -199,7 +199,7 @@ expr:
   | e=expr WHERE v=vdefinition END                      { EDef(v, e)               }
 
   (* expr.expr *)
-  | e1=expr DOT e2=expr %prec EXPR_DOT_EXPR             { EApp(e2, e1)             }
+  | e1=expr DOT e2=expr                                 { EApp(e2, e1)             }
 
   (*    expr + expr
      or expr - expr
@@ -207,13 +207,13 @@ expr:
      or expr / expr
      or expr = expr
      or ...         *)
-  | e1=expr o=binop e2=expr %prec BINOP                 { mk_binop e1 o e2         }
+  | e1=expr o=binop e2=expr                             { mk_binop e1 o e2         }
 
   (* -expr *)
   | e=preceded(MINUS, expr) %prec UMINUS                { EApp(negate, e)          }
 
   (* ~expr *)
-  | e=preceded(TILDE, expr) %prec UTILDE                { EApp(boolean_not, e)     }
+  | e=preceded(TILDE, expr)                             { EApp(boolean_not, e)     }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?
