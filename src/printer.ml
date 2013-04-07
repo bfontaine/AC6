@@ -73,7 +73,7 @@ and may_paren_typ ctx tint =
 
 and type_arguments = function
   | [] -> empty
-  | ts -> break1 ^^ paren (sepmap (comma ^^ break1) typ ts)
+  | ts -> break1 ^^ sparen (sepmap (comma ^^ break1) typ ts)
  
 and type_identifier (TIdentifier x) = text x
 
@@ -81,17 +81,21 @@ and constructor_identifier (CIdentifier x) = text x
 
 and vdefinition = function
   | Simple (b, e) ->
-    kw "val" ++ simplevdef (b, e)
+    kw "val" ++ simplevdef' b [] e None
   | MutuallyRecursive ds ->
     kw "def" ++ sepmap (break1 ^^ kw "with" ^^ space) simplevdef ds
 
-and simplevdef (b, e) =
-  let bs, e, ty = destruct_fun e in
-  nest 2 (group (binding b ++ pbindings bs ++ type_ascription ty ++ sym "=") 
+and simplevdef' b bs e ty = 
+  nest 2 (group (binding b ^^ pbindings bs ^^ type_ascription ty ++ sym "=") 
 	  ^+ (group (expr e)))
 
+and simplevdef (b, e) =
+  let bs, e, ty = destruct_fun e in
+  simplevdef' b bs e ty
+
 and pbindings bs = 
-  sepmap space pbinding bs
+  if bs = [] then empty
+  else break1 ^^ sepmap space pbinding bs
 
 and pbinding b = 
   paren (binding b)
@@ -126,26 +130,36 @@ and expr = function
     paren (expr e ++ sym ":" ++ typ ty)
   | EDef (d, e) ->
     vdefinition d ^+ kw "in" ^+ (expr e)
-  | ESeq es ->
-    sepmap (sym ";" ^^ break1) expr es
+  | ESeq es as ctx ->
+    sepmap (sym ";" ^^ break1) (may_paren_expr ctx) es
+  | EApp (EApp (b, e1), e2) as ctx when Operator.is_binop b -> 
+    group (may_paren_expr ctx e1 
+	   ++ sym (Operator.print_binop b)
+	   ++ may_paren_expr ctx e2)
+  | EApp (b, e) as ctx when Operator.is_unop b -> 
+    group (sym (Operator.print_unop b) ++ may_paren_expr ctx e)
   | EApp (e1, e2) as ctx ->
     group (may_paren_expr ctx e1 ^+ may_paren_expr ctx e2)
   | ECase (ty, bs) ->
-    sym "{" ++ maybe typ ty ++ sepmap (sym "|" ^^ break1) branch bs ++ sym "}"
+    kw "case" ^^ maybe stype ty 
+    ^+ group (sym "{" 
+	      ++ sepmap (break1 ^^ sym "|" ^^ space) branch bs 
+	      ^+ sym "}")
   | EFun (b, e) ->
-    kw "fun" ++ binding b ++ sym "=>" ^+ expr e
+    kw "fun" ++ paren (binding b) ++ sym "=>" ^+ expr e
 
 and decide_paren_expr ctx e = 
   match ctx, e with
   | EApp _, (EInt _ | EVar _ | EChar _ | EString _) -> false
   | EApp _, _ -> true
+  | ESeq _, ESeq _ -> true
   | _ -> false
 
 and may_paren_expr ctx e = 
   may_paren (decide_paren_expr ctx) expr e
 
 and branch (Branch (p, e)) =
-  pattern p ^^ sym "=>" ^^ expr e
+  pattern p ++ sym "=>" ++ expr e
 
 and pattern = function
   | PSum  (k, ty, p) -> 
@@ -156,7 +170,7 @@ and pattern = function
     end
   | PProd (ty, ds) ->
     maybe stype ty 
-    ^^ break1 ^^ sym "{" 
+    ^^ sym "{" 
     ++ sepmap (sym "," ^^ break1) psetconstructor ds
     ++ sym "}"
   | PAnd (p1, p2) as ctx ->
@@ -187,7 +201,10 @@ and may_paren_pattern ctx p =
   may_paren (decide_paren_pattern ctx) pattern p
 
 and psetconstructor (k, p) =
-  constructor_identifier k ++ sym "<-" ++ pattern p
+  constructor_identifier k ^^
+    (match p with 
+    | Some p -> break1 ^^ sym "->" ++ pattern p
+    | None -> empty)
 
 and stype ty = 
   kw "at" ++ typ ty

@@ -1,6 +1,8 @@
 *~
 .*.swp
 .*.swo
+*.tar.gz.sig
+*.tar.gz
 _build
 clap
 clap.native
