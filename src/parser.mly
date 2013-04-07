@@ -39,6 +39,7 @@
  *
  **)
 
+%left BINOP
 %nonassoc COLON_EQ IN REC_TYPE WHERE
 
 %right SEMICOLON
@@ -222,7 +223,7 @@ expr:
      or expr / expr
      or expr = expr
      or ...         *)
-  | e1=expr o=binop e2=expr                      { mk_binop e1 o e2      }
+  | e1=expr o=binop e2=expr %prec BINOP          { mk_binop e1 o e2      }
 
   (* -expr *)
   | e=preceded(MINUS, expr) %prec UNOP           { EApp(negate, e)       }
