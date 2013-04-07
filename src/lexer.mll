@@ -19,8 +19,11 @@ let character = '\'' atom '\''   (** char litterals *)
 let str = '"' atom* '"'        (** string litterals *)
 let layout = [ ' ' '\t' '\r' '\n']
 
+let line_comment = "**" _#[ '\r' '\n']* [ '\r' '\n' ]
+
 rule main = parse
   layout         { main lexbuf }
+| line_comment   { main lexbuf }
 | '|'            { PIPE }
 | '('            { L_PAREN }
 | ')'            { R_PAREN }
