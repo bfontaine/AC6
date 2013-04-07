@@ -31,20 +31,17 @@
 
 (**
  * Tokens that don't need priority rules:
- * - END IS REC TYPE WITH
+ * - CONSTR_ID CHAR ID INT STR ZERO
+ * - AT CASE DEF DO END IS REC TYPE VAL WITH IF FUN
  * - COLON COMMA PIPE
- * - R_PAREN R_BRACKET L_SQUARE R_SQUARE
- * - UNDERSC
+ * - L_BRACKET L_PAREN R_PAREN R_BRACKET L_SQUARE R_SQUARE
+ * - UNDERSC TILDE
  *
  **)
 
-%nonassoc CONSTR_ID CHAR INT STR ID ZERO
-%nonassoc L_BRACKET L_PAREN
-%nonassoc WITH_ST
-%nonassoc ASSIGN AT CASE COLON_EQ DEF DO FUN IN REC_TYPE VAL VDEF WHERE
+%nonassoc COLON_EQ IN REC_TYPE WHERE
 
 %right SEMICOLON
-%nonassoc IF
 %nonassoc THEN
 %nonassoc ELSE
 
@@ -64,7 +61,7 @@
 
 %right EXPR_EXPR DOT
 
-%nonassoc TILDE UNOP
+%nonassoc UNOP
 
 %%
 
@@ -153,7 +150,7 @@ definition:
 
 vdefinition:
   (* val aBinding = expr *) 
-    VAL b=binding EQ e=expr %prec ASSIGN { Simple(b, e) }
+    VAL b=binding EQ e=expr { Simple(b, e) }
 
   (* def aVarId [ (binding) (binding) ... ] : aType = expr [ with ... with ... ] *)
   | v=simple_vdef w=with_list { MutuallyRecursive(v::w) }
@@ -161,7 +158,7 @@ vdefinition:
 (* this is just a vdefinition without 'with' statements *)
 simple_vdef:
   (* def aVarId [ (binding) (binding) ... ] : aType = expr *)
-    DEF v=var_id bl=bindings COLON t=typ EQ e=expr %prec VDEF
+    DEF v=var_id bl=bindings COLON t=typ EQ e=expr
         { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
 
 with_list:
@@ -171,10 +168,17 @@ with_list:
 with_st:
   (* with aVarId [ (binding) (binding) ... ] : aType = expr *)
     WITH v=var_id bl=bindings COLON t=typ
-      EQ e=expr %prec WITH_ST { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
+      EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
 
 
 (** == Expressions == *)
+
+app_expr:
+  (* aVarId *)
+  | v=var_id { EVar(v) }
+
+  (* (expr) *)
+  | p=p_delimited(expr) { p }
 
 expr:
   (* anInt *)
@@ -187,8 +191,7 @@ expr:
   (* aString *)
   | s=STR                               { EString(s)     }
 
-  (* aVarId *)
-  | v=var_id                            { EVar(v)        }
+  | a=app_expr { a }
 
   (* constr_id [ at aType ] [ \[ expr \] ] *)
   | c=constr_id t=preceded(AT, typ)?
@@ -197,9 +200,6 @@ expr:
   (* [ at aType ] { aConstrId <- expr [, aConstrId <- expr, ... ] } *)
   | t=ioption(preceded(AT, typ))
       cl=br_delimited(constr_defs)      { EProd(t, cl)   }    
-
-  (* ( expr ) *)
-  | e=p_delimited(expr)                 { e              }
 
   (* ( expr : type ) *)
   | L_PAREN e=expr COLON t=typ R_PAREN  { EAnnot(e, t)   }
@@ -248,7 +248,7 @@ expr:
   | DO e=br_delimited(expr)                      { mk_do e                  }
 
   (* expr expr *)
-  | e1=expr e2=expr %prec EXPR_EXPR              { EApp(e1, e2)             }
+  | e1=app_expr e2=expr %prec EXPR_EXPR              { EApp(e1, e2)             }
 
 
 (** == Identifiers == *)
