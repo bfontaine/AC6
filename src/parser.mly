@@ -77,7 +77,7 @@
 %left AND
 %nonassoc NOT
 
-%right EXPR_EXPR DOT
+%right DOT
 
 %nonassoc UNOP
 
@@ -199,6 +199,27 @@ app_expr:
   | p=p_delimited(expr) { p }
 
 expr:
+  (* aVDefinition in expr *)
+  | v=vdefinition IN e=expr             { EDef(v, e)     }
+  (* expr where aVDefinition end *)
+  | e=expr WHERE v=vdefinition END      { EDef(v, e)     }
+   (* expr ; expr *)
+  | e1=expr SEMICOLON e2=expr           { ESeq([e1; e2]) }
+    (* expr.expr *)
+  | e1=expr DOT e2=expr                 { EApp(e2, e1)   }
+  (*    expr + expr
+     or expr - expr
+     or expr * expr
+     or expr / expr
+     or expr = expr
+     or ...         *)
+  | e1=expr o=binop e2=expr %prec BINOP          { mk_binop e1 o e2      }
+   (* -expr *)
+  | e=preceded(MINUS, expr) %prec UNOP           { EApp(negate, e)       }
+
+  | e=expr_init {e}
+
+expr_init:
   (* anInt *)
     i=INT                               { EInt(i)        }
   | ZERO                                { EInt(0)        }
@@ -222,29 +243,6 @@ expr:
   (* ( expr : type ) *)
   | L_PAREN e=expr COLON t=typ R_PAREN  { EAnnot(e, t)   }
 
-  (* expr ; expr *)
-  | e1=expr SEMICOLON e2=expr           { ESeq([e1; e2]) }
-
-  (* aVDefinition in expr *)
-  | v=vdefinition IN e=expr             { EDef(v, e)     }
-
-  (* expr where aVDefinition end *)
-  | e=expr WHERE v=vdefinition END      { EDef(v, e)     }
-
-  (* expr.expr *)
-  | e1=expr DOT e2=expr                 { EApp(e2, e1)   }
-
-  (*    expr + expr
-     or expr - expr
-     or expr * expr
-     or expr / expr
-     or expr = expr
-     or ...         *)
-  | e1=expr o=binop e2=expr %prec BINOP          { mk_binop e1 o e2      }
-
-  (* -expr *)
-  | e=preceded(MINUS, expr) %prec UNOP           { EApp(negate, e)       }
-
   (* ~expr *)
   | e=preceded(TILDE, expr) %prec UNOP           { EApp(boolean_not, e)  }
 
@@ -266,7 +264,7 @@ expr:
   | DO e=br_delimited(expr)                      { mk_do e               }
 
   (* expr expr *)
-  | e1=app_expr e2=expr %prec EXPR_EXPR              { EApp(e1, e2)             }
+  | e1=app_expr e2=expr_init              { EApp(e1, e2)             }
 
 
 (** == Identifiers == *)
