@@ -94,8 +94,8 @@ and line_comment = parse
  * enters in this loop, and ignore everything except "(*" and "*)". If it sees
  * another "(*" token, it increases the current depth and recursively call this
  * loop. If it sees a "*)" token, it decreases the current depth. If the depth
- * is equal to 0, it comes back in the main loop.
- **)*)
+ * is equal to 0, it comes back in the main loop. "*)"
+ **)
 and block_comment depth = parse
   "(*"           { block_comment (depth + 1) lexbuf }
 | "*)"           { match (depth - 1) with
