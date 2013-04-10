@@ -3,6 +3,9 @@
 .*.swo
 *.tar.gz.sig
 *.tar.gz
+*-counter
+*.bad-output
 _build
 clap
 clap.native
+/clap-galichet-fontaine-*

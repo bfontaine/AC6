@@ -42,6 +42,7 @@
 ./src/sugar.mli
 ./src/lexer.mll
 ./src/error.ml
+./src/operator.ml
 ./src/syntacticAnalysis.mli
 ./src/error.mli
 ./myocamlbuild_config.ml
