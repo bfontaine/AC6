@@ -176,14 +176,15 @@ with_st:
 
 app_expr:
   (* aVarId *)
-  | v=var_id { EVar(v) }
+    v=var_id { EVar(v) }
 
   (* (expr) *)
   | p=p_delimited(expr) { p }
 
+
 expr:
   (* aVDefinition in expr *)
-  | v=vdefinition IN e=expr             { EDef(v, e)     }
+    v=vdefinition IN e=expr             { EDef(v, e)     }
   (* expr where aVDefinition end *)
   | e=expr WHERE v=vdefinition END      { EDef(v, e)     }
    (* expr ; expr *)
@@ -196,12 +197,16 @@ expr:
      or expr / expr
      or expr = expr
      or ...         *)
-  | e1=expr o=binop e2=expr %prec BINOP          { mk_binop e1 o e2      }
+  | e1=expr o=binop e2=expr %prec BINOP { mk_binop e1 o e2      }
+
    (* -expr *)
-  | e=preceded(MINUS, expr) %prec UNOP           { EApp(negate, e)       }
+  | e=preceded(MINUS, expr) %prec UNOP  { EApp(negate, e)       }
+  (* ~expr *)
+  | e=preceded(TILDE, expr) %prec UNOP  { EApp(boolean_not, e)  }
 
   | e=expr_init {e}
 
+(* these expressions can be in the right part of the 'expr expr' rule *)
 expr_init:
   (* anInt *)
     i=INT                               { EInt(i)        }
@@ -225,9 +230,6 @@ expr_init:
 
   (* ( expr : type ) *)
   | L_PAREN e=expr COLON t=typ R_PAREN  { EAnnot(e, t)   }
-
-  (* ~expr *)
-  | e=preceded(TILDE, expr) %prec UNOP           { EApp(boolean_not, e)  }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?
