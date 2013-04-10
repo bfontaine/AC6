@@ -12,13 +12,13 @@ let constr_id = ['A'-'Z' '_'] letter*  (** constructors *)
 let integer = digit+ | "0x" hex+ | "0b" ['0' '1']+  (** integer litterals *)
 
 let atom =
-    "\\" ['0' '1'] digit digit | '2' ['0'-'4'] digit | "25" ['0'-'5']
+    '\\' ( ['0' '1'] digit digit | '2' ['0'-'4'] digit | "25" ['0'-'5'] )
   | "\\0x" hex hex
-  | "\\\\" | "\\n" | "\\t" | "\\b" | "\\r"
+  | '\\' ( '\\' | 'n' | 't' | 'b' | 'r' ) (* escaped characters *)
 
-(* \x27 is the single quote, \x22 is the double quote *)
-let char_atom = atom | ['\x20'-'\x26' '\x28'-'\x7E'] | "\\'"
-let str_atom  = atom | ['\x20'-'\x21' '\x23'-'\x7E'] | "\\\""
+(* \x27 is the single quote, \x22 is the double quote, \x5C is the backslash *)
+let char_atom = atom | ['\x20'-'\x26' '\x28'-'\x5B' '\x5D'-'\x7E'] | "\\'"
+let str_atom  = atom | ['\x20'-'\x21' '\x23'-'\x5B' '\x5D'-'\x7E'] | "\\\""
 
 let character = '\'' char_atom '\''       (** char litterals *)
 let str = '"' str_atom * '"'  (** string litterals *)
@@ -77,8 +77,8 @@ rule main = parse
 | "and"          { AND }
 | "not"          { NOT }
 | integer as x   { INT(int_of_string x) }
-| character as x { CHAR x.[0] }
-| str as x       { STR x }
+| character      { CHAR (Lexing.lexeme_char lexbuf 1) }
+| str as x       { STR (String.sub x 1 (String.length(x) - 2)) }
 | id as x        { ID x }
 | constr_id as x { CONSTR_ID x }
 | "**"           { line_comment lexbuf }
