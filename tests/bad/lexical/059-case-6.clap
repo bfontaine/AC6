@@ -1,0 +1,3 @@
+val x = 
+  case { Some at [ _ ] => 42 }
+ 

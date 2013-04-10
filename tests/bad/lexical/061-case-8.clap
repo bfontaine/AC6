@@ -1,0 +1,3 @@
+val x = 
+  case { { first -> x , Tag } => x }
+ 
