@@ -3,28 +3,11 @@
 
   open AST
   open Sugar
+  open Operator
 
   let parse_error = Error.error "during parsing"
 
   let mk_binop e1 o e2 = EApp(EApp(o, e1), e2)
-
-  (* Operator *)
-  let plus = EVar (Identifier "+") 
-  let minus = EVar (Identifier "-")
-  let star = EVar (Identifier "*") 
-  let slash = EVar (Identifier "/") 
-  let percent = EVar (Identifier "%") 
-  let eq = EVar (Identifier "=") 
-  let coloneq =  EVar (Identifier ":=") 
-  let andand = EVar (Identifier "&&") 
-  let pipepipe = EVar (Identifier "||") 
-  let le = EVar (Identifier "<=") 
-  let ge = EVar (Identifier ">=") 
-  let lt = EVar (Identifier "<") 
-  let gt = EVar (Identifier ">") 
-  let bangeq = EVar (Identifier "!=") 
-  let negate = EVar (Identifier "--")
-  let boolean_not = EVar (Identifier "~")
 
 %}
 
