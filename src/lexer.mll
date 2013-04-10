@@ -10,13 +10,18 @@ let hex    = ['0'-'9' 'a'-'f' 'A'-'F']
 let id = ['a'-'z'] letter*         (** variables & types *)
 let constr_id = ['A'-'Z' '_'] letter*  (** constructors *)
 let integer = digit+ | "0x" hex+ | "0b" ['0' '1']+  (** integer litterals *)
+
 let atom =
     "\\" ['0' '1'] digit digit | '2' ['0'-'4'] digit | "25" ['0'-'5']
   | "\\0x" hex hex
-  | ['\x20'-'\x7E'] (* printable chars *)
-  | '\\' | '\'' | '\n' | '\t' | '\b' | '\r'
-let character = '\'' atom '\''   (** char litterals *)
-let str = '"' atom* '"'        (** string litterals *)
+  | "\\\\" | "\\n" | "\\t" | "\\b" | "\\r"
+
+(* \x27 is the single quote, \x22 is the double quote *)
+let char_atom = atom | ['\x20'-'\x26' '\x28'-'\x7E'] | "\\'"
+let str_atom  = atom | ['\x20'-'\x21' '\x23'-'\x7E'] | "\\\""
+
+let character = '\'' char_atom '\''       (** char litterals *)
+let str = '"' str_atom * '"'  (** string litterals *)
 let layout = [ ' ' '\t' '\r' '\n']
 
 rule main = parse
