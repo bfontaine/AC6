@@ -1,0 +1,2 @@
+val x : int =
+  val y : int = z in val z : int = 42 in y

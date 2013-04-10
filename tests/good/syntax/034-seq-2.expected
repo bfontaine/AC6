@@ -1,0 +1,4 @@
+val t : { U } =
+  U { U }
+val s : { U } =
+  t; t

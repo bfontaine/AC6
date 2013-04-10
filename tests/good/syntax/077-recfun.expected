@@ -1,0 +1,6 @@
+def f (x : { U }) =
+  g (U)
+with g (x : { U }) =
+  f (U)
+with h (x : { U }) (y : { U }) =
+  g x

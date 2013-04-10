@@ -1,0 +1,3 @@
+** This one is syntactically correct but is not well-typed. 
+val x = a b
+

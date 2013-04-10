@@ -1,0 +1,2 @@
+type state <result> = { Running + Converged result + Error }
+

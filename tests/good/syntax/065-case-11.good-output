@@ -1,0 +1,2 @@
+val x =
+  case { not 0 => x }

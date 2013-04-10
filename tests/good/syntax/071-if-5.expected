@@ -1,0 +1,6 @@
+val x =
+  (case
+  { True => (case { True => U | False => U { U } }) (False)
+  | False => U
+  })
+  (True)

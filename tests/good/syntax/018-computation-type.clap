@@ -1,0 +1,9 @@
+type computation <t> = 
+  rec c is {
+    Converged t
+  + Frozen { Unit } -> c
+  }
+  
+
+type stream <t> = rec c is { Unit } -> c
+
