@@ -200,7 +200,7 @@ expr:
   | e1=expr o=binop e2=expr %prec BINOP { mk_binop e1 o e2      }
 
    (* -expr *)
-  | e=preceded(MINUS, expr) %prec UNOP  { EApp(negate, e)       }
+  | e=preceded(MINUS, expr_init)  { EApp(negate, e)       }
   (* ~expr *)
   | e=preceded(TILDE, expr) %prec UNOP  { EApp(boolean_not, e)  }
 
