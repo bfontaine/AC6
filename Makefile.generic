@@ -100,3 +100,12 @@ dist:
 
 check: all
 	$(MAKE) -C tests check
+
+remote-check: dist sign
+	 curl -s -F datafile=@$(PACKAGE).tar.gz.sig \
+		 -e "http://www.regis-gianas.com/~clap2013/" -A Mozilla \
+		  http://www.regis-gianas.com/~clap2013/cgi-bin/save.cgi \
+		  | grep "p>" | sed 's/<\/\?p>//g'
+
+sign: dist
+	gpg --yes --output $(PACKAGE).tar.gz.sig --sign $(PACKAGE).tar.gz
