@@ -181,6 +181,9 @@ app_expr:
   (* (expr) *)
   | p=p_delimited(expr) { p }
 
+  (* ( expr : type ) *)
+  | L_PAREN e=expr COLON t=typ R_PAREN { EAnnot(e, t) }
+
 
 expr:
   (* aVDefinition in expr *)
@@ -200,14 +203,13 @@ expr:
   | e1=expr o=binop e2=expr %prec BINOP { mk_binop e1 o e2      }
 
    (* -expr *)
-  | e=preceded(MINUS, expr_init)  { EApp(negate, e)       }
+  | e=preceded(MINUS, expr_init)        { EApp(negate, e)       }
   (* ~expr *)
   | e=preceded(TILDE, expr) %prec UNOP  { EApp(boolean_not, e)  }
 
-  | e=expr_init {e}
+  | e=expr_init | e=expr_constr         { e                     }
 
-(* these expressions can be in the right part of the 'expr expr' rule *)
-expr_init:
+litteral:
   (* anInt *)
     i=INT                               { EInt(i)        }
   | ZERO                                { EInt(0)        }
@@ -218,18 +220,10 @@ expr_init:
   (* aString *)
   | s=STR                               { EString(s)     }
 
-  | a=app_expr { a }
+(* these expressions can be in the right part of the 'expr expr' rule *)
+expr_init:
 
-  (* constr_id [ at aType ] [ \[ expr \] ] *)
-  | c=constr_id t=preceded(AT, typ)?
-      e=sq_delimited(expr)?             { ESum(c, t, e)  }
-
-  (* [ at aType ] { aConstrId <- expr [, aConstrId <- expr, ... ] } *)
-  | t=ioption(preceded(AT, typ))
-      cl=br_delimited(constr_defs)      { EProd(t, cl)   }    
-
-  (* ( expr : type ) *)
-  | L_PAREN e=expr COLON t=typ R_PAREN  { EAnnot(e, t)   }
+    e=litteral | e=app_expr                      { e                     }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?
@@ -249,8 +243,18 @@ expr_init:
   | DO e=br_delimited(expr)                      { mk_do e               }
 
   (* expr expr *)
-  | e1=app_expr e2=expr_init              { EApp(e1, e2)             }
+  | e1=app_expr e2=expr_init                     { EApp(e1, e2)          }
 
+
+(* sum/product constructor expressions *)
+expr_constr:
+  (* constr_id [ at aType ] [ \[ expr \] ] *)
+    c=constr_id t=preceded(AT, typ)?
+      e=sq_delimited(expr)?             { ESum(c, t, e)  }
+
+  (* [ at aType ] { aConstrId <- expr [, aConstrId <- expr, ... ] } *)
+  | t=ioption(preceded(AT, typ))
+      cl=br_delimited(constr_defs)      { EProd(t, cl)   }    
 
 (** == Identifiers == *)
 
