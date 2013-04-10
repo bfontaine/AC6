@@ -1,0 +1,7 @@
+val x : int = 
+** This is a correct way of mixing "val" and "where"
+  val y : int = z in 
+    y
+  where 
+    val z : int = 42 
+ 

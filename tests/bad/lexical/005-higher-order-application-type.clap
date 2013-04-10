@@ -1,0 +1,2 @@
+type apply <f, x> = f (x)
+
