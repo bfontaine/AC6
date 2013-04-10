@@ -1,0 +1,3 @@
+val x = 
+  case { x or _ => x }
+

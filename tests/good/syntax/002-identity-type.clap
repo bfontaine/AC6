@@ -1,0 +1,2 @@
+type id <t> = t
+

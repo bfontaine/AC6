@@ -1,0 +1,3 @@
+val x = 
+  case { U at { U } => 42 }
+

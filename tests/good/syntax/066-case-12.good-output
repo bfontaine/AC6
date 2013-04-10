@@ -1,0 +1,3 @@
+val x =
+  case
+  { not (0 or _) and (_ or _ and 0) and (_ or _) and 0 => 42 }

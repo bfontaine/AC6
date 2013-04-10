@@ -1,0 +1,2 @@
+val x =
+  case { Some at { Some int + None } [ _ ] => 42 }

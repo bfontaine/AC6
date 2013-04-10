@@ -1,0 +1,2 @@
+val x : { U int } =
+  { { U int } U <- 42 }

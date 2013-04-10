@@ -1,0 +1,2 @@
+val x : { None + Some int } =
+  Some { None + Some int } [ 42 ]
