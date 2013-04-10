@@ -78,7 +78,8 @@ rule main = parse
 | constr_id as x { CONSTR_ID x }
 | "**"           { line_comment lexbuf }
 | "(*"           { block_comment 1 lexbuf }
-| _              { failwith "Parse error!" }
+| eof            { EOF }
+| _              { failwith ("Unexpected '" ^ (Lexing.lexeme lexbuf) ^ "'!") }
 
 (**
  * This is a line comment. When the parser sees a "**" token, it enters
@@ -87,18 +88,21 @@ rule main = parse
  **)
 and line_comment = parse
   ['\r' '\n']    { main lexbuf }
+| eof            { EOF }
 | _              { line_comment lexbuf }
 
 (**
- * This is a block comment, possibly nested. When the parser sees a "(*", it
- * enters in this loop, and ignore everything except "(*" and "*)". If it sees
- * another "(*" token, it increases the current depth and recursively call this
- * loop. If it sees a "*)" token, it decreases the current depth. If the depth
- * is equal to 0, it comes back in the main loop. "*)"
+ * This is a block comment, possibly nested. When the parser sees a "( *", it
+ * enters in this loop, and ignore everything except "( *" and "* )". If it sees
+ * another "( *" token, it increases the current depth and recursively call this
+ * loop. If it sees a "* )" token, it decreases the current depth. If the depth
+ * is equal to 0, it comes back in the main loop. (remove spaces in the tokens
+ * of this comment)
  **)
 and block_comment depth = parse
   "(*"           { block_comment (depth + 1) lexbuf }
 | "*)"           { match (depth - 1) with
                    | 0 -> main lexbuf
                    | _ -> block_comment (depth - 1) lexbuf }
+| eof            { EOF }
 | _              { block_comment depth lexbuf }
