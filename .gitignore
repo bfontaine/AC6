@@ -5,6 +5,7 @@
 *.tar.gz
 *-counter
 *.bad-output
+*.good-output
 _build
 clap
 clap.native
