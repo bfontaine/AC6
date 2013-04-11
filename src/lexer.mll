@@ -109,5 +109,5 @@ and block_comment depth = parse
 | "*)"           { match (depth - 1) with
                    | 0 -> main lexbuf
                    | _ -> block_comment (depth - 1) lexbuf }
-| eof            { EOF }
+| eof            { failwith "Comment not terminated" }
 | _              { block_comment depth lexbuf }
