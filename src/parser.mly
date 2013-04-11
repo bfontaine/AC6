@@ -39,7 +39,7 @@
  *
  **)
 
-%left BINOP
+%left BINOP_NEUTRE
 %nonassoc COLON_EQ IN REC_TYPE WHERE
 
 %right SEMICOLON
@@ -49,9 +49,16 @@
 %right R_ARROW DBL_R_ARROW L_ARROW
 %right EQ NE LE LT GE GT
 
+%left MINUS
+%left PLUS
+
+%left BINOP_INF
+
 %left PERCENT
-%left PLUS MINUS
-%left STAR SLASH
+%left STAR
+%left SLASH
+
+%left BINOP_SUP
 
 %left ANDAND
 %left PIPEPIPE
@@ -200,7 +207,9 @@ expr:
      or expr / expr
      or expr = expr
      or ...         *)
-  | e1=expr o=binop e2=expr %prec BINOP { mk_binop e1 o e2      }
+  | e1=expr o=binop_neutre e2=expr %prec BINOP_NEUTRE { mk_binop e1 o e2      }
+  | e1=expr o=binop_inf e2=expr %prec BINOP_INF       { mk_binop e1 o e2      }
+  | e1=expr o=binop_sup e2=expr %prec BINOP_SUP       { mk_binop e1 o e2      }
 
    (* -expr *)
   | e=preceded(MINUS, expr_init)        { EApp(negate, e)       }
@@ -273,24 +282,26 @@ var_id:
 
 (** === Binary Operations === *)
 
-binop:
+binop_inf:
   (* + *)
     PLUS     { plus     }
 
   (* - *)
   | MINUS    { minus    }
   
+binop_sup:
+  (* % *)
+   PERCENT  { percent  }
   (* * *)
+
   | STAR     { star     }
   
   (* / *)
   | SLASH    { slash    }
   
-  (* % *)
-  | PERCENT  { percent  }
-  
+binop_neutre:
   (* = *)
-  | EQ       { eq       }
+   EQ       { eq       }
   
   (* := *)
   | COLON_EQ { coloneq  }
