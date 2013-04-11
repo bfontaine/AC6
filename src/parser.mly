@@ -166,8 +166,8 @@ vdefinition:
 (* this is just a vdefinition without 'with' statements *)
 simple_vdef:
   (* def aVarId [ (binding) (binding) ... ] : aType = expr *)
-    DEF v=var_id bl=bindings COLON t=typ EQ e=expr
-        { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
+    DEF v=var_id bl=bindings t=preceded(COMMA,typ)? EQ e=expr
+        { (Binding(Named(v), None), mk_fundef bl t e) }
 
 with_list:
   (* [ with ... with ... ... ] *)
@@ -175,8 +175,8 @@ with_list:
 
 with_st:
   (* with aVarId [ (binding) (binding) ... ] : aType = expr *)
-    WITH v=var_id bl=bindings COLON t=typ
-      EQ e=expr { (Binding(Named(v), None), mk_fundef bl (Some t) e) }
+    WITH v=var_id bl=bindings t=preceded(COMMA,typ)?
+      EQ e=expr { (Binding(Named(v), None), mk_fundef bl t e) }
 
 
 (** == Expressions == *)
@@ -246,7 +246,7 @@ expr_init:
 
   (* fun [ (binding) (binding) ... ] [ : aType ] => expr *)
   | FUN bl=bindings
-      t=preceded(COLON, typ)? DBL_R_ARROW e=expr { mk_fun bl t e         }
+      t=preceded(COLON, typ)? DBL_R_ARROW e=expr { mk_fundef bl t e         }
 
   (* do { expr } *)
   | DO e=br_delimited(expr)                      { mk_do e               }
