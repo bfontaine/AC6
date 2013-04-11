@@ -337,7 +337,7 @@ constr_pattern:
 
 constr_patterns:
   (* aConstrId [ -> pattern ] [ ; aConstrId [ -> * pattern ] ; ... ] *)
-    l=snl(SEMICOLON, constr_pattern) { l }
+    l=snl(COMMA, constr_pattern) { l }
 
 pattern:
   (* aConstrId [ at aType ] [ \[ pattern \] ] *)
