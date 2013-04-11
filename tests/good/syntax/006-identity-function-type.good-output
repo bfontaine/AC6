@@ -1,2 +1,0 @@
-type id <a> =
-  a -> a

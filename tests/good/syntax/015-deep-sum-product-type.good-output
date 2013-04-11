@@ -1,4 +1,0 @@
-type tree_structure <subtree, element> =
-  { Empty
-  + Leaf element
-  + Node { Left subtree * Right subtree } }

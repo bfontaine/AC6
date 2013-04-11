@@ -1,2 +1,0 @@
-type list <t> =
-  rec l is { Nil + Cons { Hd t * Tl l } }

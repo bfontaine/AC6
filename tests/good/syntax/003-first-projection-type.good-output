@@ -1,2 +1,0 @@
-type fst <a, b> =
-  a

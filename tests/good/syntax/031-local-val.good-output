@@ -1,2 +1,0 @@
-val x : int =
-  val y : int = 42 in y
