@@ -417,6 +417,9 @@ typ:
   (* { contrId [ aType ] * constrId [ aType ] [ * ... ] } *)
   | p=br_delimited(star_constr_list)               { TProd(p)       }
 
+  (* {} *)
+  | L_BRACKET R_BRACKET                            { TSum([])       }
+
   (* { constrId [ aType ] } *)
   | p=br_delimited(constr)                         { TSum([p])      }
 
