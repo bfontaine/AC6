@@ -39,7 +39,7 @@
  *
  **)
 
-%left BINOP_NEUTRE
+%left BINOP_NO_PRIORITY
 %nonassoc COLON_EQ IN REC_TYPE WHERE
 
 %right SEMICOLON
@@ -52,13 +52,13 @@
 %left MINUS
 %left PLUS
 
-%left BINOP_INF
+%left BINOP_LOW_PRIORITY
 
 %left PERCENT
 %left STAR
 %left SLASH
 
-%left BINOP_SUP
+%left BINOP_HIGH_PRIORITY
 
 %left ANDAND
 %left PIPEPIPE
@@ -207,9 +207,9 @@ expr:
      or expr / expr
      or expr = expr
      or ...         *)
-  | e1=expr o=binop_neutre e2=expr %prec BINOP_NEUTRE { mk_binop e1 o e2      }
-  | e1=expr o=binop_inf e2=expr %prec BINOP_INF       { mk_binop e1 o e2      }
-  | e1=expr o=binop_sup e2=expr %prec BINOP_SUP       { mk_binop e1 o e2      }
+  | e1=expr o=binop_no_priority   e2=expr %prec BINOP_NO_PRIORITY   { mk_binop e1 o e2      }
+  | e1=expr o=binop_low_priority  e2=expr %prec BINOP_LOW_PRIORITY  { mk_binop e1 o e2      }
+  | e1=expr o=binop_high_priority e2=expr %prec BINOP_HIGH_PRIORITY { mk_binop e1 o e2      }
 
    (* -expr *)
   | e=preceded(MINUS, expr_init)        { EApp(negate, e)       }
@@ -282,14 +282,14 @@ var_id:
 
 (** === Binary Operations === *)
 
-binop_inf:
+binop_low_priority:
   (* + *)
     PLUS     { plus     }
 
   (* - *)
   | MINUS    { minus    }
   
-binop_sup:
+binop_high_priority:
   (* % *)
    PERCENT  { percent  }
   (* * *)
@@ -299,7 +299,7 @@ binop_sup:
   (* / *)
   | SLASH    { slash    }
   
-binop_neutre:
+binop_no_priority:
   (* = *)
    EQ       { eq       }
   
@@ -312,8 +312,11 @@ binop_neutre:
   (* || *)
   | PIPEPIPE { pipepipe }
   
+  | c=comparison_binop { c }
+
+comparison_binop:
   (* <= *)
-  | LE       { le       }
+    LE       { le       }
   
   (* >= *)
   | GE       { ge       }
