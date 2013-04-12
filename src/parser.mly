@@ -133,7 +133,7 @@ constr:
 
 constr_def:
   (* aConstr [ <- expr ] *)
-    c=constr_id e=preceded(L_ARROW , expr) { (c, Some e) }
+    c=constr_id e=preceded(L_ARROW , expr)? { (c, e) }
 
 constr_defs:
   (* aConstrDef [ ; aConstrDef ; aConstrDef ; ... ] *)
