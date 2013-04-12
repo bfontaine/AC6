@@ -46,7 +46,7 @@
 %nonassoc THEN
 %nonassoc ELSE
 
-%right R_ARROW DBL_R_ARROW L_ARROW
+%right R_ARROW DBL_R_ARROW
 %right EQ
 
 %left MINUS
@@ -137,7 +137,7 @@ constr_def:
 
 constr_defs:
   (* aConstrDef [ ; aConstrDef ; aConstrDef ; ... ] *)
-    l=snl(SEMICOLON, constr_def) { l }
+    l=snl(COMMA, constr_def) { l }
 
 plus_constr_list:
   (* aConstr + aConstr [ + aConstr + aConstr ... ] *)
@@ -364,7 +364,7 @@ constr_pattern:
     cp=pair(constr_id, preceded(R_ARROW, pattern)?) { cp }
 
 constr_patterns:
-  (* aConstrId [ -> pattern ] [ ; aConstrId [ -> * pattern ] ; ... ] *)
+  (* aConstrId [ -> pattern ] [ ; aConstrId [ -> pattern ] ; ... ] *)
     l=snl(COMMA, constr_pattern) { l }
 
 pattern:
