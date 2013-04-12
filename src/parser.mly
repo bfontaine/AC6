@@ -45,10 +45,9 @@
 %right SEMICOLON
 %nonassoc THEN
 %nonassoc ELSE
-%left COMPARISON
 
 %right R_ARROW DBL_R_ARROW L_ARROW
-%right EQ NE LE LT GE GT
+%right EQ
 
 %left MINUS
 %left PLUS
@@ -69,8 +68,6 @@
 %nonassoc NOT
 
 %right DOT
-
-%nonassoc UNOP
 
 %%
 
@@ -184,9 +181,9 @@ with_st:
 
 unop_expr:
    (* -expr *)
-    e=preceded(MINUS, expr_init)        { EApp(negate, e)       }
+    e=preceded(MINUS, expr_init) { EApp(negate, e)       }
   (* ~expr *)
-  | e=preceded(TILDE, expr_init) %prec UNOP  { EApp(boolean_not, e)  }
+  | e=preceded(TILDE, expr_init) { EApp(boolean_not, e)  }
 
 comparable_expr:
     a=app_expr  { a }
@@ -220,7 +217,7 @@ expr:
      or expr =  expr *)
   | e1=comparable_expr
       o=comparison_binop
-        e2=comparable_expr %prec COMPARISON
+        e2=comparable_expr
 
   (*    expr + expr
      or expr - expr
