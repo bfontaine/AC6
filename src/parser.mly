@@ -45,6 +45,7 @@
 %right SEMICOLON
 %nonassoc THEN
 %nonassoc ELSE
+%left COMPARISON
 
 %right R_ARROW DBL_R_ARROW L_ARROW
 %right EQ NE LE LT GE GT
@@ -181,6 +182,16 @@ with_st:
 
 (** == Expressions == *)
 
+unop_expr:
+   (* -expr *)
+    e=preceded(MINUS, expr_init)        { EApp(negate, e)       }
+  (* ~expr *)
+  | e=preceded(TILDE, expr_init) %prec UNOP  { EApp(boolean_not, e)  }
+
+comparable_expr:
+    a=app_expr  { a }
+  | l=litteral  { l }
+
 app_expr:
   (* aVarId *)
     v=var_id { EVar(v) }
@@ -201,20 +212,32 @@ expr:
   | e1=expr SEMICOLON e2=expr           { ESeq([e1; e2]) }
     (* expr.expr *)
   | e1=expr DOT e2=expr                 { EApp(e2, e1)   }
+
+  (*    expr <  expr
+     or expr <= expr
+     or expr >  expr
+     or expr >= expr
+     or expr =  expr *)
+  | e1=comparable_expr
+      o=comparison_binop
+        e2=comparable_expr %prec COMPARISON
+
   (*    expr + expr
      or expr - expr
      or expr * expr
      or expr / expr
-     or expr = expr
-     or ...         *)
-  | e1=expr o=binop_no_priority   e2=expr %prec BINOP_NO_PRIORITY   { mk_binop e1 o e2      }
-  | e1=expr o=binop_low_priority  e2=expr %prec BINOP_LOW_PRIORITY  { mk_binop e1 o e2      }
-  | e1=expr o=binop_high_priority e2=expr %prec BINOP_HIGH_PRIORITY { mk_binop e1 o e2      }
+     or expr % expr *)
+  | e1=expr
+      o=binop_no_priority 
+        e2=expr %prec BINOP_NO_PRIORITY
+  | e1=expr
+      o=binop_low_priority
+        e2=expr %prec BINOP_LOW_PRIORITY
+  | e1=expr
+      o=binop_high_priority
+        e2=expr %prec BINOP_HIGH_PRIORITY { mk_binop e1 o e2    }
 
-   (* -expr *)
-  | e=preceded(MINUS, expr_init)        { EApp(negate, e)       }
-  (* ~expr *)
-  | e=preceded(TILDE, expr) %prec UNOP  { EApp(boolean_not, e)  }
+  | u=unop_expr { u }
 
   | e=expr_init | e=expr_constr         { e                     }
 
@@ -229,7 +252,10 @@ litteral:
   (* aString *)
   | s=STR                               { EString(s)     }
 
-(* these expressions can be in the right part of the 'expr expr' rule *)
+(* these expressions can be in the right part of
+ * - 'expr expr'
+ * - 'MINUS expr'
+ *)
 expr_init:
 
     e=litteral | e=app_expr                      { e                     }
@@ -246,7 +272,7 @@ expr_init:
 
   (* fun [ (binding) (binding) ... ] [ : aType ] => expr *)
   | FUN bl=bindings
-      t=preceded(COLON, typ)? DBL_R_ARROW e=expr { mk_fundef bl t e         }
+      t=preceded(COLON, typ)? DBL_R_ARROW e=expr { mk_fundef bl t e      }
 
   (* do { expr } *)
   | DO e=br_delimited(expr)                      { mk_do e               }
@@ -311,8 +337,6 @@ binop_no_priority:
   
   (* || *)
   | PIPEPIPE { pipepipe }
-  
-  | c=comparison_binop { c }
 
 comparison_binop:
   (* <= *)
