@@ -121,7 +121,11 @@ branch:
 
 constr_id:
   (* aConstrId *)
-    c=CONSTR_ID { CIdentifier(c) }
+    c=constr_id_no_underscore { c }
+  | UNDERSC { CIdentifier("_") }
+
+constr_id_no_underscore:
+    c=CONSTR_ID { CIdentifier(c)   }
 
 constr:
   (* aConstr [ type ] *)
@@ -365,9 +369,15 @@ constr_patterns:
 
 pattern:
   (* aConstrId [ at aType ] [ \[ pattern \] ] *)
-    c=constr_id t=preceded(AT, typ)?
+    c=constr_id_no_underscore t=preceded(AT, typ)?
       p=sq_delimited(pattern)?         { PSum(c, t, p) }
 
+  (* '_' is a valid constr_id *)
+  | UNDERSC t=preceded(AT, typ)?
+      p=sq_delimited(pattern)? { match (t, p) with
+                                 | (None, None) -> POne
+                                 | _ -> PSum(CIdentifier("_"), t, p)
+                               }
   (* [ at aType ] { aConstrId [ -> pattern ] [ ; aConstrId [ -> pattern ] ; ... ] } *)
   | t=preceded(AT, typ)?
       cp=br_delimited(constr_patterns) { PProd(t, cp)  }
@@ -389,9 +399,6 @@ pattern:
 
   (* 0 *)
   | ZERO                               { PZero         }
-
-  (* _ *)
-  | UNDERSC                            { POne          }
 
 
 (** == Types == *)
