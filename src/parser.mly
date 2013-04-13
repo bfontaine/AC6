@@ -238,9 +238,9 @@ expr:
       o=binop_high_priority
         e2=expr %prec BINOP_HIGH_PRIORITY { mk_binop e1 o e2    }
 
-  | u=unop_expr { u }
-
-  | e=expr_init | e=expr_constr         { e                     }
+  | e=unop_expr
+  | e=expr_init
+  | e=expr_constr { e }
 
 litteral:
   (* anInt *)
@@ -318,7 +318,7 @@ binop_low_priority:
   
 binop_high_priority:
   (* % *)
-   PERCENT  { percent  }
+    PERCENT  { percent  }
   (* * *)
 
   | STAR     { star     }
@@ -328,7 +328,7 @@ binop_high_priority:
   
 binop_no_priority:
   (* = *)
-   EQ       { eq       }
+    EQ       { eq       }
   
   (* := *)
   | COLON_EQ { coloneq  }
