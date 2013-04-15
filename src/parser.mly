@@ -169,7 +169,7 @@ vdefinition:
 (* this is just a vdefinition without 'with' statements *)
 simple_vdef:
   (* def aVarId [ (binding) (binding) ... ] : aType = expr *)
-    DEF v=var_id bl=bindings t=preceded(COMMA,typ)? EQ e=expr
+    DEF v=var_id bl=bindings t=preceded(COLON,typ)? EQ e=expr
         { (Binding(Named(v), None), mk_fundef bl t e) }
 
 with_list:
@@ -178,7 +178,7 @@ with_list:
 
 with_st:
   (* with aVarId [ (binding) (binding) ... ] : aType = expr *)
-    WITH v=var_id bl=bindings t=preceded(COMMA,typ)?
+    WITH v=var_id bl=bindings t=preceded(COLON,typ)?
       EQ e=expr { (Binding(Named(v), None), mk_fundef bl t e) }
 
 
