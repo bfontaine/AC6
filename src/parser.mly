@@ -40,7 +40,8 @@
  **)
 
 %left BINOP_NO_PRIORITY
-%nonassoc COLON_EQ IN REC_TYPE WHERE
+%nonassoc COLON_EQ IN REC_TYPE 
+%nonassoc WHERE
 
 %right SEMICOLON
 %nonassoc THEN
