@@ -211,7 +211,9 @@ expr:
   (* expr where aVDefinition end *)
   | e=expr WHERE v=vdefinition END      { EDef(v, e)     }
    (* expr ; expr *)
-  | e1=expr SEMICOLON e2=expr           { ESeq([e1; e2]) }
+  | e=expr SEMICOLON el=snl(SEMICOLON, expr) { ESeq(e::el) }
+
+
     (* expr.expr *)
   | e1=expr DOT e2=expr                 { EApp(e2, e1)   }
 
