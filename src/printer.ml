@@ -152,7 +152,7 @@ and decide_paren_expr ctx e =
   match ctx, e with
   | EApp _, (EInt _ | EVar _ | EChar _ | EString _) -> false
   | EApp _, _ -> true
-  | ESeq _, ESeq _ -> false
+  | ESeq _, ESeq _ -> true
   | _ -> false
 
 and may_paren_expr ctx e = 
