@@ -7,10 +7,10 @@
 
   let parse_error = Error.error "during parsing"
 
+  (* make a binop *)
   let mk_binop e1 o e2 = EApp(EApp(o, e1), e2)
 
-  (* make an ESeq given two expressions, which can
-   * also be ESeqs. *)
+  (* make an ESeq given two expressions *)
   let mk_seq_expr e1 e2 = match e1, e2 with
     | ESeq(l1), ESeq(l2) -> ESeq(l1@l2)
     | ESeq(l1), _        -> ESeq(l1@[e2])
@@ -130,10 +130,11 @@ branch:
 constr_id:
   (* aConstrId *)
     c=constr_id_no_underscore { c }
-  | UNDERSC { CIdentifier("_") }
+  (* _ *)
+  | UNDERSC    { CIdentifier("_") }
 
 constr_id_no_underscore:
-    c=CONSTR_ID { CIdentifier(c)   }
+    c=CONSTR_ID { CIdentifier(c) }
 
 constr:
   (* aConstr [ type ] *)
@@ -193,15 +194,22 @@ with_st:
 
 unop_expr:
    (* -expr *)
-    e=preceded(MINUS, expr_init) { EApp(negate, e)       }
+    e=preceded(MINUS, unopable_expr) { EApp(negate, e)       }
   (* ~expr *)
-  | e=preceded(TILDE, expr_init) { EApp(boolean_not, e)  }
+  | e=preceded(TILDE, unopable_expr) { EApp(boolean_not, e)  }
 
-comparable_expr:
-    a=app_expr  { a }
-  | l=litteral  { l }
+unopable_expr:
+    e1=app_expr_right             { e1           }
+  (* expr expr *)
+  | e1=app_expr e2=app_expr_right { EApp(e1, e2) }
 
-app_expr:
+
+(* comparable expressions, i.e. can appear before <, >, =, !=, etc *)
+comparable_expr: e=safe_expr | e=litteral  { e }
+
+
+(* These expressions are safe, i.e. they can't create any priority problem *)
+safe_expr:
   (* aVarId *)
     v=var_id { EVar(v) }
 
@@ -211,12 +219,16 @@ app_expr:
   (* ( expr : type ) *)
   | L_PAREN e=expr_alone COLON t=typ R_PAREN { EAnnot(e, t) }
 
-app_sup_expr:
-    a=app_expr {  a  }
-  | a1=app_sup_expr a2=app_expr {EApp(a1,a2)}
+(* applicable expressions *)
+app_expr:
+    a=safe_expr { a }
+  | a1=app_expr a2=safe_expr { EApp(a1,a2) }
 
+(* an expression can be... *)
 expr:
+  (* a sequence of expressions, or *)
     e=seq_expr
+  (* a standalone expression. *)
   | e=expr_alone { e }
 
 seq_expr:
@@ -230,7 +242,7 @@ expr_alone:
   (* expr where aVDefinition end *)
   | e=expr_alone WHERE v=vdefinition END { EDef(v, e)     }
 
-    (* expr.expr *)
+  (* expr.expr *)
   | e1=expr_alone DOT e2=expr_alone      { EApp(e2, e1)   }
 
   (*    expr <  expr
@@ -258,34 +270,23 @@ expr_alone:
         e2=expr_alone %prec BINOP_HIGH_PRIORITY { mk_binop e1 o e2    }
 
   | e=unop_expr
-  | e=expr_init
+  | e=unopable_expr
   | e=expr_constr { e }
 
 litteral:
   (* anInt *)
-    i=INT                               { EInt(i)        }
-  | ZERO                                { EInt(0)        }
+    i=INT       { EInt(i)        }
+  | ZERO        { EInt(0)        }
 
   (* aChar *)
-  | c=CHAR                              { EChar(c)       }
+  | c=CHAR      { EChar(c)       }
 
   (* aString *)
-  | s=STR                               { EString(s)     }
+  | s=STR       { EString(s)     }
 
-(* these expressions can be in the right part of
- * - 'expr expr'
- * - 'MINUS expr'
- *)
-expr_init:
-    e1=expr_sub_init                                     { e1                    }
-(* expr expr *)
-  | e1=app_sup_expr e2=expr_sub_init                     { EApp(e1, e2)          }
-
-
-expr_sub_init:
-
+app_expr_right:
     e=litteral
-  | e=app_expr                                   { e                     }
+  | e=safe_expr                                  { e                     }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?
