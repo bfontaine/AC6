@@ -37,44 +37,49 @@
 
 %start<AST.program> program
 
-(**
- * Tokens that don't need priority rules:
- * - CONSTR_ID CHAR ID INT STR ZERO
- * - AT CASE DEF DO END IS REC TYPE VAL WITH IF FUN
- * - COLON COMMA PIPE
- * - L_BRACKET L_PAREN R_PAREN R_BRACKET L_SQUARE R_SQUARE
- * - UNDERSC TILDE
- *
- **)
 
+(* e=e, e:=e, e&&e, e||e *)
 %left BINOP_NO_PRIORITY
+
+(* :=, in, "rec ... is ...", where *)
 %nonassoc COLON_EQ IN REC_TYPE 
 %nonassoc WHERE
 
+(* then, else *)
 %nonassoc THEN
 %nonassoc ELSE
 
+(* ->, => *)
 %right R_ARROW DBL_R_ARROW
+
+(* = *)
 %right EQ
 
+(* -, + *)
 %left MINUS
 %left PLUS
 
+(* e+e, e-e *)
 %left BINOP_LOW_PRIORITY
 
+(* %, *, / *)
 %left PERCENT
 %left STAR
 %left SLASH
 
+(* e%e, e*e, e/e *)
 %left BINOP_HIGH_PRIORITY
 
+(* &&, || *)
 %left ANDAND
 %left PIPEPIPE
 
+(* or, and, not *)
 %left OR
 %left AND
 %nonassoc NOT
 
+(* . (rule expr.expr) *)
 %right DOT
 
 %%
@@ -275,48 +280,48 @@ expr_alone:
 
 litteral:
   (* anInt *)
-    i=INT       { EInt(i)        }
-  | ZERO        { EInt(0)        }
+    i=INT  { EInt(i)    }
+  | ZERO   { EInt(0)    }
 
   (* aChar *)
-  | c=CHAR      { EChar(c)       }
+  | c=CHAR { EChar(c)   }
 
   (* aString *)
-  | s=STR       { EString(s)     }
+  | s=STR  { EString(s) }
 
 app_expr_right:
     e=litteral
-  | e=safe_expr                                  { e                     }
+  | e=safe_expr                             { e                     }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?
-      b=br_delimited(branch_list)                { ECase(t, b)           }
+      b=br_delimited(branch_list)           { ECase(t, b)           }
 
   (* if expr then expr else expr *)
   | IF c=expr_alone
-      THEN e1=expr_alone ELSE e2=expr_alone      { mk_ifthenelse c e1 e2 }
+      THEN e1=expr_alone ELSE e2=expr_alone { mk_ifthenelse c e1 e2 }
 
   (* if expr then expr *)
-  | IF c=expr_alone THEN e1=expr_alone           { mk_ifthen c e1        }
+  | IF c=expr_alone THEN e1=expr_alone      { mk_ifthen c e1        }
 
   (* fun [ (binding) (binding) ... ] [ : aType ] => expr *)
   | FUN bl=bindings
       t=preceded(COLON, typ)?
-        DBL_R_ARROW e=expr_alone                 { mk_fundef bl t e      }
+        DBL_R_ARROW e=expr_alone            { mk_fundef bl t e      }
 
   (* do { expr } *)
-  | DO e=br_delimited(expr)                      { mk_do e               }
+  | DO e=br_delimited(expr)                 { mk_do e               }
 
 
 (* sum/product constructor expressions *)
 expr_constr:
   (* constr_id [ at aType ] [ \[ expr \] ] *)
     c=constr_id t=preceded(AT, typ)?
-      e=sq_delimited(expr)?             { ESum(c, t, e)  }
+      e=sq_delimited(expr)?          { ESum(c, t, e) }
 
   (* [ at aType ] { aConstrId <- expr [, aConstrId <- expr, ... ] } *)
   | t=ioption(preceded(AT, typ))
-      cl=br_delimited(constr_defs)      { EProd(t, cl)   }    
+      cl=br_delimited(constr_defs)   { EProd(t, cl)  }    
 
 (** == Identifiers == *)
 
@@ -435,7 +440,7 @@ type_id:
 
 %inline diples_comma_separated_list(X):
   (* [ < X [, X, X, ... ] > ] *)
-    xl = loption(delimited(LT, snl(COMMA, X), GT)) { xl }
+    xl=loption(delimited(LT, snl(COMMA, X), GT)) { xl }
 
 typ:
   (* aTypeId [ < aType [ , aType, ... ] > ] *)
