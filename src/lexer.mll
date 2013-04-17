@@ -110,4 +110,6 @@ and block_comment depth = parse
                    | 0 -> main lexbuf
                    | _ -> block_comment (depth - 1) lexbuf }
 | eof            { failwith "Comment not terminated" }
+| character
+| str
 | _              { block_comment depth lexbuf }
