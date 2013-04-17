@@ -9,6 +9,14 @@
 
   let mk_binop e1 o e2 = EApp(EApp(o, e1), e2)
 
+  (* make an ESeq given two expressions, which can
+   * also be ESeqs. *)
+  let mk_seq_expr e1 e2 = match e1, e2 with
+    | ESeq(l1), ESeq(l2) -> ESeq(l1@l2)
+    | ESeq(l1), _        -> ESeq(l1@[e2])
+    | _       , ESeq(l2) -> ESeq(e1::l2)
+    | _       , _        -> ESeq([e1; e2])
+
 %}
 
 
@@ -208,12 +216,13 @@ app_sup_expr:
   | a1=app_sup_expr a2=app_expr {EApp(a1,a2)}
 
 expr:
-      e=seq_expr
-    | e=expr_alone { e }
+    e=seq_expr
+  | e=expr_alone { e }
 
 seq_expr:
-   (* expr ; expr *)
-  e=expr_alone SEMICOLON el=snl(SEMICOLON, expr_alone) { ESeq(e::el) }
+  (* expr; expr [; expr; expr ... ] *)
+    e1=expr_alone SEMICOLON e2=expr_alone { mk_seq_expr e1 e2 }
+  | e=expr_alone  SEMICOLON s=seq_expr    { mk_seq_expr e  s }
 
 expr_alone:
   (* aVDefinition in expr *)
