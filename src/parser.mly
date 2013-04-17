@@ -43,7 +43,6 @@
 %nonassoc COLON_EQ IN REC_TYPE 
 %nonassoc WHERE
 
-%right SEMICOLON
 %nonassoc THEN
 %nonassoc ELSE
 
@@ -202,20 +201,24 @@ app_expr:
   | p=p_delimited(expr) { p }
 
   (* ( expr : type ) *)
-  | L_PAREN e=expr COLON t=typ R_PAREN { EAnnot(e, t) }
-
+  | L_PAREN e=expr_alone COLON t=typ R_PAREN { EAnnot(e, t) }
 
 expr:
-  (* aVDefinition in expr *)
-    v=vdefinition IN e=expr             { EDef(v, e)     }
-  (* expr where aVDefinition end *)
-  | e=expr WHERE v=vdefinition END      { EDef(v, e)     }
-   (* expr ; expr *)
-  | e=expr SEMICOLON el=snl(SEMICOLON, expr) { ESeq(e::el) }
+      e=seq_expr
+    | e=expr_alone { e }
 
+seq_expr:
+   (* expr ; expr *)
+  e=expr_alone SEMICOLON el=snl(SEMICOLON, expr_alone) { ESeq(e::el) }
+
+expr_alone:
+  (* aVDefinition in expr *)
+    v=vdefinition IN e=expr_alone        { EDef(v, e)     }
+  (* expr where aVDefinition end *)
+  | e=expr_alone WHERE v=vdefinition END { EDef(v, e)     }
 
     (* expr.expr *)
-  | e1=expr DOT e2=expr                 { EApp(e2, e1)   }
+  | e1=expr_alone DOT e2=expr_alone      { EApp(e2, e1)   }
 
   (*    expr <  expr
      or expr <= expr
@@ -231,15 +234,15 @@ expr:
      or expr * expr
      or expr / expr
      or expr % expr *)
-  | e1=expr
+  | e1=expr_alone
       o=binop_no_priority 
-        e2=expr %prec BINOP_NO_PRIORITY
-  | e1=expr
+        e2=expr_alone %prec BINOP_NO_PRIORITY
+  | e1=expr_alone
       o=binop_low_priority
-        e2=expr %prec BINOP_LOW_PRIORITY
-  | e1=expr
+        e2=expr_alone %prec BINOP_LOW_PRIORITY
+  | e1=expr_alone
       o=binop_high_priority
-        e2=expr %prec BINOP_HIGH_PRIORITY { mk_binop e1 o e2    }
+        e2=expr_alone %prec BINOP_HIGH_PRIORITY { mk_binop e1 o e2    }
 
   | e=unop_expr
   | e=expr_init
@@ -262,21 +265,24 @@ litteral:
  *)
 expr_init:
 
-    e=litteral | e=app_expr                      { e                     }
+    e=litteral
+  | e=app_expr                                   { e                     }
 
   (* case [ at aType ] { [ | ] aBranch [ | aBranch | aBranch | ... ] } *)
   | CASE t=preceded(AT, typ)?
       b=br_delimited(branch_list)                { ECase(t, b)           }
 
   (* if expr then expr else expr *)
-  | IF c=expr THEN e1=expr ELSE e2=expr          { mk_ifthenelse c e1 e2 }
+  | IF c=expr_alone
+      THEN e1=expr_alone ELSE e2=expr_alone      { mk_ifthenelse c e1 e2 }
 
   (* if expr then expr *)
-  | IF c=expr THEN e1=expr                       { mk_ifthen c e1        }
+  | IF c=expr_alone THEN e1=expr_alone           { mk_ifthen c e1        }
 
   (* fun [ (binding) (binding) ... ] [ : aType ] => expr *)
   | FUN bl=bindings
-      t=preceded(COLON, typ)? DBL_R_ARROW e=expr { mk_fundef bl t e      }
+      t=preceded(COLON, typ)?
+        DBL_R_ARROW e=expr_alone                 { mk_fundef bl t e      }
 
   (* do { expr } *)
   | DO e=br_delimited(expr)                      { mk_do e               }
