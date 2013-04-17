@@ -204,6 +204,9 @@ app_expr:
   (* ( expr : type ) *)
   | L_PAREN e=expr COLON t=typ R_PAREN { EAnnot(e, t) }
 
+app_sup_expr:
+    a=app_expr {  a  }
+    | a1=app_sup_expr a2=app_expr {EApp(a1,a2)}
 
 expr:
   (* aVDefinition in expr *)
@@ -259,6 +262,12 @@ litteral:
  * - 'MINUS expr'
  *)
 expr_init:
+    e1=expr_sub_init                                     { e1                    }
+(* expr expr *)
+  | e1=app_sup_expr e2=expr_sub_init                     { EApp(e1, e2)          }
+
+
+expr_sub_init:
 
     e=litteral | e=app_expr                      { e                     }
 
@@ -278,9 +287,6 @@ expr_init:
 
   (* do { expr } *)
   | DO e=br_delimited(expr)                      { mk_do e               }
-
-  (* expr expr *)
-  | e1=app_expr e2=expr_init                     { EApp(e1, e2)          }
 
 
 (* sum/product constructor expressions *)
