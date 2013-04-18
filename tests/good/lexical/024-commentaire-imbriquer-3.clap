@@ -1,0 +1,2 @@
+val x : (* type de retourn int *)  int = 42
+** commantaire imbriquer (* test 1* )

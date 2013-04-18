@@ -1,0 +1,1 @@
+val x : (* type de retourn int *)  int = 42
