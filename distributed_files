@@ -8,6 +8,8 @@
 ./clap.odocl
 ./doc
 ./doc/html
+./etc
+./etc/bash_completion.sh
 ./myocamlbuild.ml
 ./myocamlbuild_config.ml
 ./pprint
