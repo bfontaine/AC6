@@ -1,0 +1,3 @@
+val x = alloc 42
+val y = read x
+

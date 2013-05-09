@@ -1,0 +1,2 @@
+val s = "How bad is that string? \u \n \b \r \\ \""
+

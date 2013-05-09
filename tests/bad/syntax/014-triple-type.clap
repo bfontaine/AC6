@@ -1,0 +1,2 @@
+type triple <a; b; c> = { _0 a + _1 b + _2 c }
+

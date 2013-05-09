@@ -1,0 +1,3 @@
+val f = case { A[x] and y => { _1 <- x, _2 <- y } } 
+val z = f (A[42])
+

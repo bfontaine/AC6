@@ -1,0 +1,2 @@
+val x = alloc 42
+

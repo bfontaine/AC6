@@ -1,0 +1,2 @@
+val s = "How cool is that string? \t \n \b \r \\ \""
+

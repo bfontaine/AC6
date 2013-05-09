@@ -1,0 +1,33 @@
+** Generate a list of all number from 1 to n.
+def generate (n) =
+  if n = 0 then Nil else Cons [{ Hd <- n, Tl <- generate (n - 1) }]
+
+** [insert i l] where [l] is sorted, returns a list where
+** [i] is at the right position.
+def insert (i) (l) =
+  l . case {
+    Nil => 
+    Cons [{ Hd <- i, Tl <- Nil }]
+  | Cons [{ Hd -> x, Tl -> xs }] =>
+    if i < x then 
+      Cons [{ Hd <- i, Tl <- l }] 
+    else 
+      Cons [{ Hd <- x, Tl <- insert i xs }]
+}     
+
+** Tail recursive version of insertion sort.
+def sort_aux (accu) (l) = 
+ l . case {
+    Nil => accu
+  | Cons [{ Hd -> x, Tl -> xs }] =>
+    sort_aux (insert x accu) xs
+ }
+
+def sort (l) = sort_aux (Nil) l
+
+** Bench
+val main = 
+  val l = generate 10000 in 
+  val ls = sort l in
+  Unit
+

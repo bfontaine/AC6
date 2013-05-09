@@ -1,0 +1,80 @@
+** [concat (l1) (l2)] returns the concatenation of the two lists
+def concat (l1) (l2) =
+  l1 . case {
+    Nil => l2
+  | Cons [{ Hd -> x, Tl -> xs }] =>
+    Cons [{ Hd <- x, Tl <- concat xs l2 }]
+  }
+
+** [flatten l] returns the concatenation of all the lists in [l]
+def flatten (l) = 
+  l . case {
+    Nil => Nil
+  | Cons [{ Hd -> xs, Tl -> ll }] =>
+    concat xs (flatten ll)
+  }
+
+** [map (f) (l)] returns the list of the application of [f] to 
+** all the elements of [l].
+def map (f) (l) = 
+  l . case {
+    Nil => Nil
+  | Cons [{ Hd -> x, Tl -> xs }] =>
+    Cons [{ Hd <- f x, Tl <- map f xs }]
+  }
+
+** The list monad : computations of multiple results.
+
+** [return (x)] is the unit
+def return (x) = Cons [{ Hd <- x, Tl <- Nil }]
+
+** [bind x f] takes a computation [x] and generates
+** the computation the applies [f] to all the intermediate
+** results of [x].
+def bind (x) (f) = flatten (map f x)
+
+** Generate a list of all number from 1 to n.
+def generate (n) =
+  if n = 0 then Nil else Cons [{ Hd <- n, Tl <- generate (n - 1) }]
+
+** [choices l] generates all the way to split [l] into an element
+** and the other elements.
+def choices (l) = 
+  l . case {
+    Nil => Nil
+  | Cons [{ Hd -> x, Tl -> xs }] =>
+    val cs = 
+      map (case { { _1 -> y, _2 -> tl } => 
+           { _1 <- y, _2 <- Cons [{ Hd <- x, Tl <- tl }] }
+           })
+      (choices xs)
+    in
+    Cons [{ Hd <- { _1 <- x, _2 <- xs }, Tl <- cs }]
+  }
+ 
+** [permutation l] returns all the permutations of [l]
+def permutation (l) = 
+  l . case {
+    Nil => return (Nil)
+  | Cons [_] =>
+    bind (choices l) (case { { _1 -> x, _2 -> tl } =>
+      bind (permutation tl) (fun (p) =>
+      return (Cons [{ Hd <- x, Tl <- p }]))
+    })
+  }
+
+** [length l] is the depth of [l].
+def length (l) = 
+  l . case {
+    Nil => 0
+  | Cons [{ Hd -> _, Tl -> l }] => 1 + length (l)
+  }
+
+** [fact] is the most famous function in AC6.
+def fact (n) = 
+  if n = 0 then 1 else n * (fact (n - 1))
+
+val size  = 2
+val check = length (permutation (generate size)) = fact size
+  
+

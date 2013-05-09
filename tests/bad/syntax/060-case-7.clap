@@ -1,0 +1,3 @@
+val x = 
+  case { some at { Some int + None } [ x ] => 42 }
+

@@ -1,0 +1,6 @@
+type tree_structure <subtree, element> = 
+  { Empty 
+  + Leaf Element
+  + Node { Left subtree * Right subtree } 
+  }
+

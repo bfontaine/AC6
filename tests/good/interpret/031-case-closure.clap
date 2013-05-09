@@ -1,0 +1,4 @@
+val x = 42
+val f = case { y => x + y }
+val z = f 0
+

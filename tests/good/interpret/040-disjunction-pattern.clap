@@ -1,0 +1,5 @@
+val classify = case { A  or B => 1 | C => 2 }
+val xA = classify (A)
+val xB = classify (B)
+val xC = classify (C)
+

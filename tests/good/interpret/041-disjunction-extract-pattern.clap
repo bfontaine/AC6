@@ -1,0 +1,5 @@
+val classify = case { A[x] or B[x] => x | C => 0 }
+val xA = classify (A[42])
+val xB = classify (B[42])
+val xC = classify (C)
+

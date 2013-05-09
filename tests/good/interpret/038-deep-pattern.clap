@@ -1,0 +1,3 @@
+val fst_some = case { Some [{ _1 -> x, _2 -> _ }] => x }
+val z = fst_some (Some [{ _1 <- 42, _2 <- 0 }])
+

@@ -1,0 +1,4 @@
+val x = alloc 42
+val y = read x
+val z = x := 0; read x
+

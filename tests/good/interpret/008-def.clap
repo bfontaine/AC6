@@ -1,0 +1,4 @@
+val x = 
+  val y = 42 in
+  y
+

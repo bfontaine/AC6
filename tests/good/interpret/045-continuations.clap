@@ -1,0 +1,15 @@
+def return (v)   = fun (k) => k v
+def bind (m) (f) = fun (k) => m (fun (a) => f a k)
+def run (m)      = m (fun (x) => x)
+
+def cpsfact (n) = 
+  if (n = 0) then 
+    return 1 
+  else
+    bind (cpsfact (n - 1)) (fun (r) => return (r * n))
+
+val n = run (cpsfact 5)
+
+
+
+

@@ -1,0 +1,6 @@
+def choose (x) =
+  case { None => x | Some [y] => y }
+
+val z = choose 42 (None)
+val y = choose 0 (Some [42])
+

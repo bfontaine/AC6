@@ -1,0 +1,27 @@
+def square (n) =
+  if n = 0 then 
+    Cons [{ Hd <- Nil, Tl <- Nil }]
+  else 
+    val l = square (n - 1) in
+    l . case {
+    | Nil => Nil ** This case is impossible
+    | Cons [{ Hd -> h, Tl -> l2 }] => 
+      Cons [{ Hd <- Cons [{ Hd <- n, Tl <- h }], Tl <- l }]
+    }
+
+def sum (l) = 
+  l . case {
+  | Nil => 0
+  | Cons [{ Hd -> h, Tl -> l }] => h + sum l
+  }
+
+def ssum (l) = 
+  l . case {
+  | Nil => 0
+  | Cons [{ Hd -> l, Tl -> ls }] => sum l + ssum ls
+  }
+
+val bench = 
+  val s = ssum (square (300)) in
+  OK
+    

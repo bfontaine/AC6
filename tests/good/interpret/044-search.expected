@@ -1,0 +1,4 @@
+:- search = <code>
+:- pred = <code>
+:- r1 = Success [6]
+:- r2 = Fail

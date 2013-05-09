@@ -1,0 +1,4 @@
+:- classify = <code>
+:- xA = 42
+:- xB = 42
+:- xC = 0

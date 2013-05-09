@@ -1,0 +1,6 @@
+val fst = case { { _1 -> x, _2 -> _ } => x }
+val snd = case { { _1 -> _, _2 -> x } => x }
+val p = { _1 <- 42, _2 <- 0 }
+val z = fst p
+val y = snd p
+

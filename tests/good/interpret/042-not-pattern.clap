@@ -1,0 +1,4 @@
+val f = case { not (A[_]) => 1 | A[_] => 2 }
+val z = f (B)
+val y = f (A[42])
+

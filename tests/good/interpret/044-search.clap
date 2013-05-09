@@ -1,0 +1,22 @@
+def search (start) (stop) (accu) (what) = 
+  if ~ (start = stop + 1) then 
+    ((what start accu) . case {
+      Continue [accu] => search (start + 1) stop accu what
+    | Success [accu] => Success [accu]
+    | Fail => Fail
+    })
+  else 
+    Fail
+
+def pred (l) (h) (s) = 
+  fun (k) (accu) => 
+    if accu = s then 
+      Success [accu] 
+    else if (l <= k) && (k <= h) then 
+      Continue [accu + k] 
+    else Fail
+
+val r1 = search 1 10 0 (pred 1 5 6)
+
+val r2 = search 1 10 0 (pred 3 7 42)
+
