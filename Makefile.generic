@@ -104,7 +104,7 @@ check: all
 remote-check: dist sign
 	 curl -s -F datafile=@$(PACKAGE).tar.gz.sig \
 		 -e "http://www.regis-gianas.com/~clap2013/" \
-		 -A "JS_cest_mieux_que_OCaml (like Mozilla)" \
+		 -A "--> http://bit.ly/i-love-ac6 (like Mozilla)" \
 		  http://www.regis-gianas.com/~clap2013/cgi-bin/save.cgi \
 		  | grep "p>" | sed 's/<\/\?p>//g'
 
