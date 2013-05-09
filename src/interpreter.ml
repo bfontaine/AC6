@@ -28,7 +28,18 @@ let rec program p =
 
   (* evaluate an expression within an environment *)
   and eval_expr exp e = match exp with
-    
+
+    | EAnnot(exp2, _) ->
+        eval_expr exp2 e
+
+    | EApp(f, e1) ->
+        let fn, e2 = (eval_expr f e), (eval_expr e1 e) in
+          begin match fn with
+          | VPrimitive(p) -> Primitive.apply p e2
+          | _ -> failwith "Not Implemented"
+          end
+
+
     | EDef(v, exp2) ->
         eval_expr exp2 (eval_vdef v e)
 
@@ -36,8 +47,16 @@ let rec program p =
     | EChar(c)   -> VChar(c)
     | EString(s) -> VString(s)
 
+    | EVar(v) ->
+        if Primitive.identifier v
+        then
+          Primitive.lookup v
+        else
+          Env.lookup (Named v) e
+
     | ESeq(es) -> 
-        (* evaluate only the last expression *)
+        (* evaluate only the last expression,
+         * assuming that the others don't have side effects *)
         eval_expr (List.nth es ((List.length es) - 1)) e
 
     | _ ->
