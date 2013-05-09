@@ -36,16 +36,37 @@ let rec program p =
         let fn, e2 = (eval_expr f e), (eval_expr e1 e) in
           begin match fn with
           | VPrimitive(p) -> Primitive.apply p e2
+          
+          | VInt(_)
+          | VChar(_)
+          | VString(_)
+          | VStruct(_) -> raise Primitive.InvalidPrimitiveCall
+
           | _ -> failwith "Not Implemented"
           end
 
+    (* chars *)
+    | EChar(c)   -> VChar(c)
 
     | EDef(v, exp2) ->
         eval_expr exp2 (eval_vdef v e)
 
+    (* ints *)
     | EInt(i)    -> VInt(i)
-    | EChar(c)   -> VChar(c)
+
+    (* product constructors *)
+    | EProd(_, cl) ->
+        failwith "Not Implemented"
+
+    (* strings *)
     | EString(s) -> VString(s)
+
+    (* sum contructors *)
+    | ESum(c, _, Some e1) ->
+        let e1' = eval_expr e1 e
+        in VStruct([(c, Some e1')])
+    | ESum(c, _, None) ->
+        VStruct([(c, None)])
 
     | EVar(v) ->
         if Primitive.identifier v
@@ -54,13 +75,20 @@ let rec program p =
         else
           Env.lookup (Named v) e
 
-    | ESeq(es) -> 
-        (* evaluate only the last expression,
-         * assuming that the others don't have side effects *)
-        eval_expr (List.nth es ((List.length es) - 1)) e
+    (* buggy:
+
+    | ESeq(es) ->
+        let rec eval_eseq seq ev = match seq with
+          | [] -> ev
+          | ex::ess ->
+              (eval_eseq ess (eval_expr ex ev))
+        in
+          eval_eseq es e
+
+    *)
 
     | _ ->
-        failwith "Not implemented"
+        failwith "Not Implemented"
 
   in
     eval p (Env.empty ())
