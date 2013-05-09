@@ -58,3 +58,5 @@
 ./tests/good/lexical/Makefile
 ./tests/good/syntax
 ./tests/good/syntax/Makefile
+./tests/good/interpret
+./tests/good/interpret/Makefile
