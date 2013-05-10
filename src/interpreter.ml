@@ -85,11 +85,10 @@ let rec program p =
     | EString(s) -> VString(s)
 
     (* sum contructors *)
-    | ESum(c, _, Some e1) ->
-        let e1' = eval_expr e1 e
-        in VStruct([(c, Some e1')])
-    | ESum(c, _, None) ->
-        VStruct([(c, None)])
+    | ESum(c, _, e1) -> let e2 = begin match e1 with
+      | Some e1' -> (Some (eval_expr e1' e))
+      | None -> None
+    end in VStruct([(c, e2)])
 
     | EVar(v) ->
         if Primitive.identifier v
