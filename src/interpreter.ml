@@ -72,7 +72,14 @@ let rec program p =
 
     (* product constructors *)
     | EProd(_, cl) ->
-        failwith "EProd Not Implemented"
+        let eval_constr = fun
+          (c', ex) -> let ex' = begin match ex with
+            | Some exx -> Some (eval_expr exx e)
+            | None     -> None
+          end in
+            (c', ex')
+        in
+          VStruct(List.map eval_constr cl)
 
     (* strings *)
     | EString(s) -> VString(s)
@@ -91,20 +98,8 @@ let rec program p =
         else
           Env.lookup (Named v) e
 
-    (* buggy:
-
     | ESeq(es) ->
-        let rec eval_eseq seq ev = match seq with
-          | [] -> ev
-          | ex::ess ->
-              (eval_eseq ess (eval_expr ex ev))
-        in
-          eval_eseq es e
-
-    *)
-
-    | _ ->
-        failwith "Not Implemented"
+        failwith "ESeq Not Implemented"
 
   in
     eval p (Env.empty ())
