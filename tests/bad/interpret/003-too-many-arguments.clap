@@ -1,0 +1,2 @@
+val x = fun (x) => x
+val y = x 4 2
