@@ -126,10 +126,16 @@ let rec program p =
    * *)
   and eval_branch patt br_exp input_exp ev =
     match patt with
-    | PSum(_, _, p) -> failwith "PSum not implemented"
+    | PSum(c, _, p) -> failwith "PSum not implemented"
     | PProd(_, px)  -> failwith "PProd not implemented"
     | PAnd(p1, p2)  -> failwith "PAnd not implemented"
-    | POr(p1, p2)   -> failwith "POr not implemented"
+
+    | POr(p1, p2) -> begin match (eval_branch p1 br_exp input_exp ev) with
+      | None -> eval_branch p2 br_exp input_exp ev
+      | ve   -> ve
+      end
+
+
     | PNot(p)       -> failwith "PNot not implemented"
     
     (* | 0 => ... : never matches *)
