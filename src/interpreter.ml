@@ -24,9 +24,14 @@ let rec program p =
   and eval_vdef v e = match v with
     | Simple(Binding(i, _), ex) ->
         Env.bind i (eval_expr ex e) e
-    | MutuallyRecursive(_) -> failwith "Not implemented"
+    | MutuallyRecursive(_) ->
+        failwith "MutuallyRecursive Not implemented"
 
   (* evaluate an expression within an environment *)
+  (* FIXME This function returns an evaluated expression, but these
+   *       expressions can modify the environment (e.g. 'x:=42'), so
+   *       it should return an evironment with the evaluated expression.
+   *)
   and eval_expr exp e = match exp with
 
     | EAnnot(exp2, _) ->
@@ -35,15 +40,22 @@ let rec program p =
     | EApp(f, e1) ->
         let fn, e2 = (eval_expr f e), (eval_expr e1 e) in
           begin match fn with
-          | VPrimitive(p) -> Primitive.apply p e2
+          | VPrimitive(p) ->
+              Primitive.apply p e2
           
           | VInt(_)
           | VChar(_)
           | VString(_)
-          | VStruct(_) -> raise Primitive.InvalidPrimitiveCall
+          | VStruct(_) ->
+              raise Primitive.InvalidPrimitiveCall
 
-          | _ -> failwith "Not Implemented"
+          | VClosure(_) ->
+              failwith "VClosure Not Implemented"
           end
+
+    (* case (and if/then/else) *)
+    | ECase(_, branchs) ->
+        failwith "ECase Not Implemented"
 
     (* chars *)
     | EChar(c)   -> VChar(c)
@@ -51,12 +63,16 @@ let rec program p =
     | EDef(v, exp2) ->
         eval_expr exp2 (eval_vdef v e)
 
+    (* function *)
+    | EFun(arg, exp2) ->
+        failwith "EFun not Implemented"
+
     (* ints *)
     | EInt(i)    -> VInt(i)
 
     (* product constructors *)
     | EProd(_, cl) ->
-        failwith "Not Implemented"
+        failwith "EProd Not Implemented"
 
     (* strings *)
     | EString(s) -> VString(s)
