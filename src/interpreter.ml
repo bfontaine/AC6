@@ -64,8 +64,12 @@ let rec program p =
         eval_expr exp2 (eval_vdef v e)
 
     (* function *)
-    | EFun(arg, exp2) ->
-        failwith "EFun not Implemented"
+    | EFun(Binding(arg, _), exp2) ->
+        let arg' = match arg with
+        | Named a -> (PVar a)
+        | Unnamed -> (POne)
+        in
+        VClosure(e, [ Branch(arg', exp2) ])
 
     (* ints *)
     | EInt(i)    -> VInt(i)
@@ -110,7 +114,16 @@ let rec program p =
         | None -> eval_branchs ev branchs' exp
         end
 
-  (* Evaluate a branch. It returns a value option *)
+  (* Evaluate a branch. It returns a value option. A branch is something like
+   * that :
+   *
+   *    pattern => expr
+   *
+   *  patt : the pattern
+   *  br_exp : the expression in the branch
+   *  input_exp : the expression on which the branch is 'applied'
+   *  ev : the environment
+   * *)
   and eval_branch patt br_exp input_exp ev =
     match patt with
     | PSum(_, _, p) -> failwith "PSum not implemented"
@@ -119,13 +132,16 @@ let rec program p =
     | POr(p1, p2)   -> failwith "POr not implemented"
     | PNot(p)       -> failwith "PNot not implemented"
     
-    (* never matches *)
+    (* | 0 => ... : never matches *)
     | PZero ->
         None
 
-    | PVar(v)       -> failwith "PVar not implemented"
+    (* | x => ... : set x to the input and evaluate the expression
+     *              with this new environment *)
+    | PVar(v) ->
+        Some (eval_expr br_exp (Env.bind (Named v) input_exp ev))
 
-    (* always matches *)
+    (* | _ => ... : always matches *)
     | POne ->
         Some (eval_expr br_exp ev)
 
