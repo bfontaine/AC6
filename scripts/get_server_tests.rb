@@ -92,7 +92,7 @@ if $0 == __FILE__
     FileUtils.mkdir_p "#{$root}/good/lexical"
     FileUtils.mkdir_p "#{$root}/good/memo"
     FileUtils.mkdir_p "#{$root}/good/bench"
-    FileUtils.mkdir_p "#{$root}/good/interpreter"
+    FileUtils.mkdir_p "#{$root}/good/interpret"
 
     cts = parse_server_output STDIN.read
 
