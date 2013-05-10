@@ -55,7 +55,7 @@ let rec program p =
 
     (* case (and if/then/else) *)
     | ECase(_, branchs) ->
-        failwith "ECase Not Implemented"
+        VClosure(e, branchs)
 
     (* chars *)
     | EChar(c)   -> VChar(c)
