@@ -49,8 +49,8 @@ let rec program p =
           | VStruct(_) ->
               raise Primitive.InvalidPrimitiveCall
 
-          | VClosure(_) ->
-              failwith "VClosure Not Implemented"
+          | VClosure(e', branchs) ->
+              eval_branchs e' branchs e2
           end
 
     (* case (and if/then/else) *)
@@ -99,6 +99,35 @@ let rec program p =
 
     | ESeq(es) ->
         failwith "ESeq Not Implemented"
+
+  (* evaluate a list of branchs, given an expression *)
+  and eval_branchs ev branchs exp =
+    match branchs with
+    | [] -> vunit
+    | Branch(p, exp')::branchs' ->
+        begin match (eval_branch p exp' exp ev) with
+        | Some ve -> ve
+        | None -> eval_branchs ev branchs' exp
+        end
+
+  (* Evaluate a branch. It returns a value option *)
+  and eval_branch patt br_exp input_exp ev =
+    match patt with
+    | PSum(_, _, p) -> failwith "PSum not implemented"
+    | PProd(_, px)  -> failwith "PProd not implemented"
+    | PAnd(p1, p2)  -> failwith "PAnd not implemented"
+    | POr(p1, p2)   -> failwith "POr not implemented"
+    | PNot(p)       -> failwith "PNot not implemented"
+    
+    (* never matches *)
+    | PZero ->
+        None
+
+    | PVar(v)       -> failwith "PVar not implemented"
+
+    (* always matches *)
+    | POne ->
+        Some (eval_expr br_exp ev)
 
   in
     eval p (Env.empty ())
