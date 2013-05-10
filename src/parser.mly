@@ -224,10 +224,13 @@ safe_expr:
   (* ( expr : type ) *)
   | L_PAREN e=expr_alone COLON t=typ R_PAREN { EAnnot(e, t) }
 
+safe_expr_or_litteral:
+    e=safe_expr | e=litteral { e }
+
 (* applicable expressions *)
 app_expr:
     a=safe_expr { a }
-  | a1=app_expr a2=safe_expr { EApp(a1,a2) }
+  | a1=app_expr a2=safe_expr_or_litteral { EApp(a1,a2) }
 
 (* an expression can be... *)
 expr:
