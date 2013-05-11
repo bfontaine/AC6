@@ -139,8 +139,13 @@ let rec program p =
       | ve   -> ve
       end
 
-
-    | PNot(p)       -> failwith "PNot not implemented"
+    (* If the expression match the pattern (we test it using eval_branch
+     * on a simple code (EInt 0), return None. If it doesn't match,
+     * evaluate the branch. *)
+    | PNot(p) -> begin match eval_branch p (EInt 0) input_exp ev with
+      | Some _ -> None
+      | None   -> Some (eval_expr br_exp ev)
+      end
     
     (* | 0 => ... : never matches *)
     | PZero ->
