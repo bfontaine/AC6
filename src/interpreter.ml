@@ -101,8 +101,16 @@ let rec program p =
         else
           Env.lookup (Named v) e
 
-    | ESeq(es) ->
-        failwith "ESeq Not Implemented"
+    | ESeq(es) -> match es with
+      (* This should not happen, since sequences of expressions contain 2+
+       * expressions. *)
+      | [] -> vunit
+      | [ex] ->
+          eval_expr ex e
+
+      | ex::es'
+          -> let _ = eval_expr ex e in
+             eval_expr (ESeq es') e
 
   (* evaluate a list of branchs, given an expression *)
   and eval_branchs ev branchs exp =
