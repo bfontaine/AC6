@@ -28,10 +28,6 @@ let rec program p =
         failwith "MutuallyRecursive Not implemented"
 
   (* evaluate an expression within an environment *)
-  (* FIXME This function returns an evaluated expression, but these
-   *       expressions can modify the environment (e.g. 'x:=42'), so
-   *       it should return an evironment with the evaluated expression.
-   *)
   and eval_expr exp e = match exp with
 
     | EAnnot(exp2, _) ->
