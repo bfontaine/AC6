@@ -126,40 +126,46 @@ let rec program p =
    *  patt : the pattern
    *  br_exp : the expression in the branch
    *  input_exp : the expression on which the branch is 'applied'
-   *  ev : the environment
+   *  envt : the environment
    * *)
-  and eval_branch patt br_exp input_exp ev =
+  and eval_branch patt br_exp input_exp envt = 
+    match eval_pattern patt input_exp envt with
+    | None      -> None 
+    | Some envt' -> Some (eval_expr br_exp envt')
+
+  and eval_pattern patt exp envt =
     match patt with
     | PSum(c, _, p) -> failwith "PSum not implemented"
-    | PProd(_, px)  -> failwith "PProd not implemented"
-    | PAnd(p1, p2)  -> failwith "PAnd not implemented"
 
-    | POr(p1, p2) -> begin match (eval_branch p1 br_exp input_exp ev) with
-      | None -> eval_branch p2 br_exp input_exp ev
+    | PProd(_, px)  -> failwith "PProd not implemented"
+
+    | PAnd(p1, p2)  -> begin match (eval_pattern p1 exp envt) with
+      | None       -> None
+      | Some envt2 -> eval_pattern p2 exp envt2
+      end
+
+    | POr(p1, p2) -> begin match (eval_pattern p1 exp envt) with
+      | None -> eval_pattern p2 exp envt
       | ve   -> ve
       end
 
     (* If the expression match the pattern (we test it using eval_branch
      * on a simple code (EInt 0), return None. If it doesn't match,
      * evaluate the branch. *)
-    | PNot(p) -> begin match eval_branch p (EInt 0) input_exp ev with
+    | PNot(p) -> begin match eval_pattern p exp envt with
       | Some _ -> None
-      | None   -> Some (eval_expr br_exp ev)
+      | None   -> Some envt
       end
     
     (* | 0 => ... : never matches *)
-    | PZero ->
-        None
+    | PZero -> None
 
     (* | x => ... : set x to the input and evaluate the expression
      *              with this new environment *)
-    | PVar(v) ->
-        Some (eval_expr br_exp (Env.bind (Named v) input_exp ev))
+    | PVar(v) -> Some (Env.bind (Named v) exp envt)
 
     (* | _ => ... : always matches *)
-    | POne ->
-        Some (eval_expr br_exp ev)
-
+    | POne -> Some envt
   in
     eval p (Env.empty ())
 
