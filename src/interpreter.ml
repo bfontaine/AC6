@@ -24,8 +24,11 @@ let rec program p =
   and eval_vdef v e = match v with
     | Simple(Binding(i, _), ex) ->
         Env.bind i (eval_expr ex e) e
-    | MutuallyRecursive(_) ->
-        failwith "MutuallyRecursive Not implemented"
+    | MutuallyRecursive(l) -> match l with
+      | []     -> e
+      | (Binding(i, _), body)::lx ->
+          (* FIXME doesn't (mutually-)recursive functions *)
+          eval_vdef (MutuallyRecursive lx) (Env.bind i (eval_expr body e) e)
 
   (* evaluate an expression within an environment *)
   and eval_expr exp e = match exp with
