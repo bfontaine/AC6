@@ -1,0 +1,4 @@
+val a =
+  (case { x =>
+    (case { y => y + x })(x)
+  })(21)

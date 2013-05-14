@@ -1,0 +1,3 @@
+val u = U
+val x = u "foo"
+
