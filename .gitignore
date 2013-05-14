@@ -10,3 +10,4 @@ _build
 clap
 clap.native
 /clap-galichet-fontaine-*
+.highscore
