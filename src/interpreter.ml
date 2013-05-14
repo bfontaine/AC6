@@ -20,17 +20,45 @@ let rec program p =
           | DVal(v) -> eval_vdef v e
         end in eval defs e'
 
-  and eval_mutually_recursive l e = match l with
+  (**
+   * Evaluate some mutually recursive function definitions, and
+   * return a new environment.
+   *
+   * @return a new environment with the functions in it
+   * @param l a list of mutually recursive definitions
+   * @param e the current environment
+   **)
+  and eval_mutually_recursive l e =
+    (* Since some function bodies need to know about some other
+       functions, we make it in two steps:
+       - first, declare empty functions in the environment
+       - then, define their body *)
+    let rec fill_env_with_empty_defs l e = match l with
       | []     -> e
       | (Binding(i, _), body)::lx ->
-          (* FIXME doesn't (mutually-)recursive functions *)
-          eval_mutually_recursive lx (Env.bind i (eval_expr body e) e)
+          let e2 = Env.declare i e in
+            eval_mutually_recursive lx e2
+
+    and bind_bodies l e = match l with
+      | [] -> e
+      | (Binding(i, _), body)::lx -> begin match i with
+        | Named(i') ->
+            Env.define i (eval_expr body e) e;
+              bind_bodies lx e
+        | Unnamed ->
+            bind_bodies lx e
+        end
+    
+    in
+      bind_bodies l (fill_env_with_empty_defs l e)
+            
 
   (* evaluate a vdefinition within an environment *)
   and eval_vdef v e = match v with
     | Simple(Binding(i, _), ex) ->
         Env.bind i (eval_expr ex e) e
-    | MutuallyRecursive(l) -> eval_mutually_recursive l e
+    | MutuallyRecursive(l) ->
+        eval_mutually_recursive l e
 
   (* evaluate an expression within an environment *)
   and eval_expr exp e = match exp with
