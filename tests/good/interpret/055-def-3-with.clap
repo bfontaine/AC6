@@ -1,0 +1,6 @@
+def  f (x) (y) = g(x) + h(y)
+with g (x) = x + h(x)
+with h (x) = 42 - x
+
+val q = f (1) (42)
+
