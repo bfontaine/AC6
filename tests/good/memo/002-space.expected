@@ -1,0 +1,4 @@
+:- square = <code>
+:- sum = <code>
+:- ssum = <code>
+:- bench = OK
