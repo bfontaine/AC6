@@ -5,6 +5,8 @@ type value = Primitive.t Runtime.value
 
 type env = Primitive.t Runtime.venv
 
+let memo = Hashtbl.create 42
+
 (**
  * Evaluate a program.
  *
@@ -91,8 +93,8 @@ let rec program p =
           begin match fn with
           | VPrimitive(p) ->
               Primitive.apply p e2
-          | VClosure(e', branchs) ->
-              eval_branchs e' branchs e2
+          | VClosure(_, _) as v ->
+              eval_vclosure v e2
           
           | VInt(_)
           | VChar(_)
@@ -147,6 +149,25 @@ let rec program p =
       | ex::es' ->
           let _ = eval_expr ex e in
              eval_expr (ESeq es') e
+
+  and eval_vclosure v expr = match v with
+    | VClosure(ev, branchs) ->
+        if !Memo.flag
+        then eval_memo_vclosure branchs expr ev
+        else eval_branchs ev branchs expr
+
+    (* should not happen, but OCaml warns us if this pattern-
+       -matching is not exhaustive. *)
+    | _ -> 
+        raise Primitive.InvalidPrimitiveCall
+
+  and eval_memo_vclosure branchs expr ev = 
+    if Hashtbl.mem memo branchs
+    then Hashtbl.find memo branchs
+    else
+      let result = eval_branchs ev branchs expr in
+        Hashtbl.add memo branchs result;
+        result
 
   (* evaluate a list of branchs, given an expression *)
   and eval_branchs ev branchs exp =
