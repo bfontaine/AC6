@@ -29,8 +29,8 @@ let rec program p =
         (* evaluate the definition, and iter on the
          * rest of the program *)
         let e' = begin match d with
-          | DType(_) -> e (* there's no type here *)
           | DVal(v) -> eval_vdef v e
+          | _ -> e (* DType(_): there's no type here *)
         end in eval defs e'
 
   (**
@@ -89,12 +89,12 @@ let rec program p =
 
     (* Function application: f(x) *)
     | EApp(f, e1) ->
-        let fn, e2 = (eval_expr f e), (eval_expr e1 e) in
+        let fn = eval_expr f e in
           begin match fn with
           | VPrimitive(p) ->
-              Primitive.apply p e2
+              Primitive.apply p (eval_expr e1 e)
           | VClosure(_, _) as v ->
-              eval_vclosure v e2
+              eval_vclosure v (eval_expr e1 e)
           
           | VInt(_)
           | VChar(_)
@@ -115,7 +115,7 @@ let rec program p =
     | EFun(Binding(arg, _), exp2) ->
         let arg' = match arg with
         | Named a -> (PVar a)
-        | Unnamed -> (POne)
+        | Unnamed -> POne
         in
         VClosure(e, [ Branch(arg', exp2) ])
 
