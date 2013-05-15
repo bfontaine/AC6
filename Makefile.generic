@@ -28,6 +28,9 @@ endif
 OCAMLDOC = ocamldoc
 HEADACHE = headache
 
+# Vim syntax directory
+VIM_SYN_DIR=~/.vim/syntax
+
 #########
 # Rules #
 #########
@@ -110,3 +113,20 @@ remote-check: dist sign
 
 sign: dist
 	gpg --yes --output $(PACKAGE).tar.gz.sig --sign $(PACKAGE).tar.gz
+
+
+#########
+# Bonus #
+#########
+
+vim-clap-syntax: ${VIM_SYN_DIR}/clap.vim
+	@echo "Add the line below in your ~/.vimrc:"
+	@echo
+	@echo "\tau BufNewFile,BufRead *.clap set ft=clap"
+	@echo
+
+${VIM_SYN_DIR}/clap.vim: ./utils/clap.vim ${VIM_SYN_DIR}
+	cp $< $@
+
+${VIM_SYN_DIR}:
+	mkdir -p $@
