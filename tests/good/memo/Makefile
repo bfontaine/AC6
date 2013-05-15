@@ -4,7 +4,7 @@ all:
 
 -include ../../../Makefile.local
 
-PROGRAM=../../../$(TARGET) $(OPTIONS)
+PROGRAM=../../../$(TARGET) --memo $(OPTIONS)
 EXT=$(TARGETEXT)
 
 OPTIONS=$(shell if test -f options; then cat options; else echo ""; fi)
