@@ -195,49 +195,50 @@ let rec program p =
     match eval_pattern patt input_exp envt with
     | None       -> None 
     | Some envt' -> Some (eval_expr br_exp envt')
+    
+  and eval_psum constr patt exp envt =
+    match (patt,exp) with
+    (* If the given expression is a sum ...*)
+    | (Some p ,VStruct [(c',v)]) -> 
+        (* ...and if constructor ids match... *)
+        if c' = constr then begin match v with
+
+        (* ...then if the expression is something like A, don't match. *)
+        | None    -> None
+
+        (* ...else if the expression is something like A[x],
+           try to match p with x. *)
+        | Some v' -> eval_pattern p v' envt
+        (* If constructor ids don't match, the pattern doesn't match *)
+         end else None
+
+    (*   *)
+    | (None , VStruct [(c',v)]) ->
+      (* ...and the constructor ids match, then the pattern matches *) 
+          if constr = c' then Some envt
+          
+          (* if not, it doesn't match. *)
+          else None
+              
+    (* If the given expression is not a sum, don't match *)
+    | (_,_) -> None
+
+  and eval_pprod px exp envt =
+    match px with
+    | [] -> Some envt
+    | (c,p)::px' -> let envt' = eval_psum c p exp envt in
+        begin match envt' with
+        | Some envt''    -> eval_pprod px' exp envt''
+        | None -> None
+        end
 
   and eval_pattern patt exp envt =
     match patt with
 
-    (* | A[p] => ... : sum with sub-pattern *)
-    | PSum(c, _, Some p) -> begin match exp with
+    (* | A[p] => ... *)
+    | PSum(c, _,p ) -> eval_psum c p exp envt
 
-        (* If the given expression is a sum... *)
-        | VStruct [(c', v)] ->
-            (* ...and if constructor ids match... *)
-            if c' = c then begin match v with
-
-            (* ...then if the expression is something like A,
-               don't match. *)
-            | None    -> None
-
-            (* ...else if the expression is something like A[x],
-               try to match p with x. *)
-            | Some v' -> eval_pattern p v' envt
-
-            (* If constructor ids don't match, the pattern doesn't match *)
-            end else None
-
-        (* If the given expression is not a sum, don't match *)
-        | _ -> None
-        end
-
-    (* | A => ... : sum without sub-pattern *)
-    | PSum(c, _, None) -> begin match exp with
-
-      (* If the given expression is a sum... *)
-      | VStruct [(c', _)] ->
-          (* ...and the constructor ids match, then the pattern matches *) 
-          if c = c' then Some envt
-          
-          (* if not, it doesn't match. *)
-          else None
-
-      (* If the given expression is not a sum, don't match *)
-      | _ -> None
-      end
-
-    | PProd(_, px)  -> failwith "PProd not implemented"
+    | PProd(_, px)  -> eval_pprod px exp envt
 
     (* | p1 and p2 => ... *)
     | PAnd(p1, p2)  -> begin match (eval_pattern p1 exp envt) with
