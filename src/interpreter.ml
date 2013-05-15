@@ -5,13 +5,24 @@ type value = Primitive.t Runtime.value
 
 type env = Primitive.t Runtime.venv
 
-
+(**
+ * Evaluate a program.
+ *
+ * @param p the program (list of definitions)
+ * @return an environment
+ **)
 let rec program p =
 
-  (* evaluate a program with an environment *)
+  (**
+   * Evaluate a program with an environment.
+   * @param p the program (list of definitions
+   * @param e the environment
+   * @return the new environment
+   **)
   let rec eval p e = match p with
     (* No definitions *)
     | [] -> e
+    (* One or more definitions *)
     | d::defs ->
         (* evaluate the definition, and iter on the
          * rest of the program *)
@@ -63,32 +74,38 @@ let rec program p =
   (* evaluate an expression within an environment *)
   and eval_expr exp e = match exp with
 
+    (* chars *)
+    | EChar(c)   -> VChar(c)
+    (* ints *)
+    | EInt(i)    -> VInt(i)
+    (* strings *)
+    | EString(s) -> VString(s)
+
+    (* Annotation: (expr:type) *)
     | EAnnot(exp2, _) ->
         eval_expr exp2 e
 
+    (* Function application: f(x) *)
     | EApp(f, e1) ->
         let fn, e2 = (eval_expr f e), (eval_expr e1 e) in
           begin match fn with
           | VPrimitive(p) ->
               Primitive.apply p e2
+          | VClosure(e', branchs) ->
+              eval_branchs e' branchs e2
           
           | VInt(_)
           | VChar(_)
           | VString(_)
           | VStruct(_) ->
               raise Primitive.InvalidPrimitiveCall
-
-          | VClosure(e', branchs) ->
-              eval_branchs e' branchs e2
           end
 
-    (* case (and if/then/else) *)
+    (* case { patt => expr | ... }  (and if/then/else) *)
     | ECase(_, branchs) ->
         VClosure(e, branchs)
 
-    (* chars *)
-    | EChar(c)   -> VChar(c)
-
+    (* definition *)
     | EDef(v, exp2) ->
         eval_expr exp2 (eval_vdef v e)
 
@@ -99,9 +116,6 @@ let rec program p =
         | Unnamed -> (POne)
         in
         VClosure(e, [ Branch(arg', exp2) ])
-
-    (* ints *)
-    | EInt(i)    -> VInt(i)
 
     (* product constructors *)
     | EProd(_, cl) ->
@@ -114,31 +128,24 @@ let rec program p =
         in
           VStruct(List.map eval_constr cl)
 
-    (* strings *)
-    | EString(s) -> VString(s)
-
     (* sum contructors *)
     | ESum(c, _, e1) -> let e2 = begin match e1 with
       | Some e1' -> (Some (eval_expr e1' e))
-      | None -> None
+      | None     -> None
     end in VStruct([(c, e2)])
 
     | EVar(v) ->
         if Primitive.identifier v
-        then
-          Primitive.lookup v
-        else
-          Env.lookup (Named v) e
+        then Primitive.lookup v
+        else Env.lookup (Named v) e
 
     | ESeq(es) -> match es with
-      (* This should not happen, since sequences of expressions contain 2+
-       * expressions. *)
       | [] -> vunit
       | [ex] ->
           eval_expr ex e
 
-      | ex::es'
-          -> let _ = eval_expr ex e in
+      | ex::es' ->
+          let _ = eval_expr ex e in
              eval_expr (ESeq es') e
 
   (* evaluate a list of branchs, given an expression *)
@@ -147,8 +154,10 @@ let rec program p =
     | [] -> vunit
     | Branch(p, exp')::branchs' ->
         begin match (eval_branch p exp' exp ev) with
+        (* if this branch matches, return the new environment *)
         | Some ve -> ve
-        | None -> eval_branchs ev branchs' exp
+        (* if not, try the next one *)
+        | None    -> eval_branchs ev branchs' exp
         end
 
   (* Evaluate a branch. It returns a value option. A branch is something like
@@ -200,7 +209,7 @@ let rec program p =
           (* ...and the constructor ids match, then the pattern matches *) 
           if c = c' then Some envt
           
-          (* else, it doesn't match. *)
+          (* if not, it doesn't match. *)
           else None
 
       (* If the given expression is not a sum, don't match *)
@@ -227,15 +236,15 @@ let rec program p =
       | Some _ -> None
       | None   -> Some envt
       end
-    
-    (* | 0 => ... : never matches *)
-    | PZero -> None
 
     (* | x => ... : set x to the input and return the new environment *)
     | PVar(v) -> Some (Env.bind (Named v) exp envt)
 
     (* | _ => ... : always matches *)
     | POne -> Some envt
+    
+    (* | 0 => ... : never matches *)
+    | PZero -> None
   in
     eval p (Env.empty ())
 
