@@ -29,7 +29,7 @@ syn case match
 " 
 " syn match    ocamlCommentErr "\*)"
 " 
-" syn match    ocamlThenErr    "\<then\>"
+syn match    clapThenErr    "\<then\>"
 " 
 " " Some convenient clusters
 " syn cluster  ocamlAllErrs contains=ocamlBraceErr,ocamlBrackErr,ocamlParenErr,ocamlCommentErr,ocamlCountErr,ocamlDoErr,ocamlDoneErr,ocamlEndErr,ocamlThenErr
@@ -62,17 +62,13 @@ syn keyword  clapTodo contained TODO FIXME XXX NOTE
 " endif
 " 
 " 
-" " "for"
-" syn region   ocamlNone matchgroup=ocamlKeyword start="\<for\>" matchgroup=ocamlKeyword end="\<\(to\|downto\)\>" contains=ALLBUT,@ocamlContained,ocamlCountErr
-" 
-" 
 " " "do"
 " if !exists("ocaml_revised")
 "   syn region   ocamlDo matchgroup=ocamlKeyword start="\<do\>" matchgroup=ocamlKeyword end="\<done\>" contains=ALLBUT,@ocamlContained,ocamlDoneErr
 " endif
 " 
-" " "if"
-" syn region   ocamlNone matchgroup=ocamlKeyword start="\<if\>" matchgroup=ocamlKeyword end="\<then\>" contains=ALLBUT,@ocamlContained,ocamlThenErr
+" "if"
+syn region clapNone matchgroup=clapKeyword start="\<if\>" matchgroup=clapKeyword end="\<then\>" contains=ALLBUT,@clapContained,clapThenErr
 " 
 " 
 " " "struct"
@@ -82,26 +78,14 @@ syn keyword  clapTodo contained TODO FIXME XXX NOTE
 " syn region   ocamlKeyword start="\<module\>\s*\<type\>\(\s*\<of\>\)\=" matchgroup=ocamlModule end="\<\w\(\w\|'\)*\>" contains=ocamlComment skipwhite skipempty nextgroup=ocamlMTDef
 " syn match    ocamlMTDef "=\s*\w\(\w\|'\)*\>"hs=s+1,me=s
 " 
-" syn keyword  ocamlKeyword  and as assert class
-" syn keyword  ocamlKeyword  constraint else
-" syn keyword  ocamlKeyword  exception external fun
-" 
-" syn keyword  ocamlKeyword  in inherit initializer
-" syn keyword  ocamlKeyword  land lazy let match
-" syn keyword  ocamlKeyword  method mutable new of
-" syn keyword  ocamlKeyword  parser private raise rec
-" syn keyword  ocamlKeyword  try type
-" syn keyword  ocamlKeyword  virtual when while with
-" 
-" if exists("ocaml_revised")
-"   syn keyword  ocamlKeyword  do value
-"   syn keyword  ocamlBoolean  True False
-" else
-"   syn keyword  ocamlKeyword  function
-"   syn keyword  ocamlBoolean  true false
-"   syn match    ocamlKeyChar  "!"
-" endif
-" 
+syn keyword clapKeyword and at case def
+syn keyword clapKeyword do else end fun
+syn keyword clapKeyword if in is not or
+syn keyword clapKeyword rec then type val
+syn keyword clapKeyword where with
+
+syn keyword clapBoolean True False
+  
 " syn keyword  ocamlType     array bool char exn float format format4
 " syn keyword  ocamlType     int int32 int64 lazy_t list nativeint option
 " syn keyword  ocamlType     string unit
@@ -124,7 +108,7 @@ syn keyword  clapTodo contained TODO FIXME XXX NOTE
 " syn match    ocamlCharacter    "'\\x\x\x'"
 " syn match    ocamlCharErr      "'\\\d\d'\|'\\\d'"
 " syn match    ocamlCharErr      "'\\[^\'ntbr]'"
-" syn region   ocamlString       start=+"+ skip=+\\\\\|\\"+ end=+"+
+syn region   clapString       start=+"+ skip=+\\\\\|\\"+ end=+"+
 " 
 " syn match    ocamlFunDef       "->"
 " syn match    ocamlRefAssign    ":="
@@ -147,12 +131,10 @@ syn keyword  clapTodo contained TODO FIXME XXX NOTE
 " else
 "   syn match    ocamlOperator   "<-"
 " endif
-" 
-" syn match    ocamlNumber        "\<-\=\d\(_\|\d\)*[l|L|n]\?\>"
-" syn match    ocamlNumber        "\<-\=0[x|X]\(\x\|_\)\+[l|L|n]\?\>"
-" syn match    ocamlNumber        "\<-\=0[o|O]\(\o\|_\)\+[l|L|n]\?\>"
-" syn match    ocamlNumber        "\<-\=0[b|B]\([01]\|_\)\+[l|L|n]\?\>"
-" syn match    ocamlFloat         "\<-\=\d\(_\|\d\)*\.\?\(_\|\d\)*\([eE][-+]\=\d\(_\|\d\)*\)\=\>"
+ 
+syn match clapNumber "\<-\=\d\+\>"
+syn match clapNumber "\<-\=0x\x\+\>"
+syn match clapNumber "\<-\=0b[01]\+\>"
 " 
 " " Labels
 " syn match    ocamlLabel        "\~\(\l\|_\)\(\w\|'\)*"lc=1
@@ -186,13 +168,13 @@ if version >= 508 || !exists("did_clap_syntax_inits")
 "   HiLink ocamlDoErr       Error
 "   HiLink ocamlDoneErr       Error
 "   HiLink ocamlEndErr       Error
-"   HiLink ocamlThenErr       Error
+    HiLink clapThenErr        Error
 " 
 "   HiLink ocamlCharErr       Error
 " 
 "   HiLink ocamlErr       Error
 " 
-    HiLink clapComment      Comment
+    HiLink clapComment        Comment
     HiLink clapLineComment    Comment
 
 "   HiLink ocamlModPath       Include
@@ -210,10 +192,9 @@ if version >= 508 || !exists("did_clap_syntax_inits")
 " 
 "   HiLink ocamlConstructor  Constant
 " 
-"   HiLink ocamlVal          Keyword
 "   HiLink ocamlModPreRHS    Keyword
 "   HiLink ocamlMPRestr2       Keyword
-"   HiLink ocamlKeyword       Keyword
+    HiLink clapKeyword        Keyword
 "   HiLink ocamlMethod       Include
 "   HiLink ocamlFunDef       Keyword
 "   HiLink ocamlRefAssign    Keyword
@@ -222,17 +203,16 @@ if version >= 508 || !exists("did_clap_syntax_inits")
 "   HiLink ocamlTopStop       Keyword
 "   HiLink ocamlOperator       Keyword
 " 
-"   HiLink ocamlBoolean       Boolean
+    HiLink clapBoolean       Boolean
 "   HiLink ocamlCharacter    Character
-"   HiLink ocamlNumber       Number
-"   HiLink ocamlFloat       Float
-"   HiLink ocamlString       String
+    HiLink clapNumber        Number
+    HiLink clapString        String
 " 
 "   HiLink ocamlLabel       Identifier
 " 
 "   HiLink ocamlType       Type
 " 
-    HiLink ocamlTodo    Todo
+    HiLink clapTodo          Todo
 " 
 "   HiLink ocamlEncl       Keyword
 " 
