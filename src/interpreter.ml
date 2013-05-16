@@ -200,7 +200,19 @@ let rec program p =
     match eval_pattern patt input_exp envt with
     | None       -> None 
     | Some envt' -> Some (eval_expr br_exp envt')
-    
+  
+  (* Evaluate a pattern sum. It returns a value option. 
+   * A PSum is something like that :
+   *
+   *   K[p]  ~  {K  <- v}
+   *   constr[patt] ~ ex_c <- ex_v
+   *
+   * constr : constructor_identifier
+   * patt   : pattern
+   * ex_c   : constructor_identifier with the expression
+   * ex_v   : pattern wiht the expression
+   * envt   : the environnement
+   * *)
   and eval_psum constr patt ex_c ex_v envt =
     match patt with
     (* sum with sub-pattern *)
