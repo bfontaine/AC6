@@ -211,7 +211,7 @@ let rec program p =
    * patt   : pattern
    * ex_c   : constructor_identifier with the expression
    * ex_v   : pattern wiht the expression
-   * envt   : the environnement
+   * envt   : the environment
    * *)
   and eval_psum constr patt ex_c ex_v envt =
     match patt with
@@ -238,9 +238,13 @@ let rec program p =
           else None
   (* Evaluate a pattern produit. It returns a value option.
    * A PSum is something like that :
+   *  
+   *  {K1 -> p1 ... kn -> pn} ~ {k1 -> v1 ... kn -> vn}
+   *  {         px          } ~ {        ex_li        }
    *
-   * 
-   *
+   * px    : list of contructor_identifier and pattern
+   * ex_li : list of construcor_identifier and value
+   * envt  : the environment
    * *)
   and eval_pprod px ex_li envt = 
     match (px,ex_li) with 
@@ -264,10 +268,12 @@ let rec program p =
         (* If the given expression is not a sum, don't match *)
         | _ -> None
         end 
-
+    (*  { , C -> P } => ...    *)
     | PProd(_, px)  -> 
         begin match exp with 
-        | Vstruct ex_li -> eval_pprod px ex_li envt
+        (* If the given expression is a prod ...*)
+        | VStruct ex_li -> eval_pprod px ex_li envt
+        (* If the given expression is not a prod, don't match *)
         | _ -> None
         end
 
