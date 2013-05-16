@@ -54,13 +54,12 @@ let rec program p =
 
     and bind_bodies l e = match l with
       | [] -> e
-      | (Binding(i, _), body)::lx -> begin match i with
-        | Named(i') ->
-            Env.define i (eval_expr body e) e;
-              bind_bodies lx e
-        | Unnamed ->
+      | (Binding(Named(_) as i, _), body)::lx ->
+          Env.define i (eval_expr body e) e;
             bind_bodies lx e
-        end
+
+      | _::lx -> (* Unnamed *)
+          bind_bodies lx e
     
     in
       bind_bodies l (fill_env_with_empty_defs l e)
