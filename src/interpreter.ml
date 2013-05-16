@@ -5,6 +5,7 @@ type value = Primitive.t Runtime.value
 
 type env = Primitive.t Runtime.venv
 
+(* The hashtable used for the memoization *)
 let memo = Hashtbl.create 42
 
 (**
@@ -92,8 +93,13 @@ let rec program p =
           begin match fn with
           | VPrimitive(p) ->
               Primitive.apply p (eval_expr e1 e)
-          | VClosure(_, _) as v ->
-              eval_vclosure v (eval_expr e1 e)
+
+          | VClosure(ev, branchs) ->
+              (* choose between eval_branchs and eval_memo_vclosure,
+                 depending of the memoization flag. *)
+              (if !Memo.flag
+              then eval_memo_vclosure
+              else eval_branchs) ev branchs (eval_expr e1 e)
           
           | VInt(_)
           | VChar(_)
@@ -149,18 +155,18 @@ let rec program p =
           let _ = eval_expr ex e in
              eval_expr (ESeq es') e
 
-  and eval_vclosure v expr = match v with
-    | VClosure(ev, branchs) ->
-        if !Memo.flag
-        then eval_memo_vclosure branchs expr ev
-        else eval_branchs ev branchs expr
-
-    (* should not happen, but OCaml warns us if this pattern-
-       -matching is not exhaustive. *)
-    | _ -> 
-        raise Primitive.InvalidPrimitiveCall
-
-  and eval_memo_vclosure branchs expr ev = 
+  (**
+   * Evaluate a list of branchs using memoization. If the list have been
+   * called on the given expression in the past, it returns its return
+   * value without calling the function. If not, it calls the list of
+   * branchs on the expression as usual, and store the return value in
+   * a global Hashtbl.
+   *
+   * @branchs a list of branches
+   * @expr the expression on which the function is called
+   * @ev the current environment
+   **)
+  and eval_memo_vclosure ev branchs expr =
     if Hashtbl.mem memo branchs
     then Hashtbl.find memo branchs
     else
