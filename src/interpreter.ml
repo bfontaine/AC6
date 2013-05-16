@@ -236,12 +236,12 @@ let rec program p =
           
           (* if not, it doesn't match. *)
           else None
-
-  and eval_pprods px exp envt =
-    match (exp) with
-          | VStruct li_vs -> eval_pprod px li_vs envt
-          | _ -> None 
-
+  (* Evaluate a pattern produit. It returns a value option.
+   * A PSum is something like that :
+   *
+   * 
+   *
+   * *)
   and eval_pprod px ex_li envt = 
     match (px,ex_li) with 
     |((c,p)::px' , (c',p')::ex_li' ) -> let envt' = eval_psum c p c' p' envt in 
@@ -265,7 +265,11 @@ let rec program p =
         | _ -> None
         end 
 
-    | PProd(_, px)  -> eval_pprods px exp envt
+    | PProd(_, px)  -> 
+        begin match exp with 
+        | Vstruct ex_li -> eval_pprod px ex_li envt
+        | _ -> None
+        end
 
     (* | p1 and p2 => ... *)
     | PAnd(p1, p2)  -> begin match (eval_pattern p1 exp envt) with
