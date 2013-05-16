@@ -103,13 +103,22 @@ syn keyword clapBoolean True False
 " 
 " " Module prefix
 " syn match    ocamlModPath      "\u\(\w\|'\)*\."he=e-1
-" 
-" syn match    ocamlCharacter    "'\\\d\d\d'\|'\\[\'ntbr]'\|'.'"
-" syn match    ocamlCharacter    "'\\x\x\x'"
-" syn match    ocamlCharErr      "'\\\d\d'\|'\\\d'"
-" syn match    ocamlCharErr      "'\\[^\'ntbr]'"
+  | '\\' ( '\\' | 'n' | 't' | 'b' | 'r' ) (* escaped characters *)
+
+syn match    clapCharacter    "'[\x20-\x26\x28-\x5B\x5D-\x7E]'"
+syn match    clapCharacter    "'\\[\\ntbr']'"
+syn match    clapCharacter    "'\\0x\x\x'"
+syn match    clapCharacter    "'\\\([01]\d\d\|2[0-4]\d|25[0-5]\)'"
+
+syn match    clapCharErr      "'[\x01-\x19\x27\x5C\x5D]'"
+syn match    clapCharErr      "'\\[^\'ntbr]'"
+syn match    clapCharacter    "'\\0x\x\x\x\+'"
+syn match    clapCharacter    "'\\\([13-9]\d\d\|25[6-9]\|2[0-46-9]\d\|\d\d\d\d\+\)'"
+
+
 syn region   clapString       start=+"+ skip=+\\\\\|\\"+ end=+"+
-" 
+
+
 " syn match    ocamlFunDef       "->"
 " syn match    ocamlRefAssign    ":="
 " syn match    ocamlTopStop      ";;"
@@ -170,7 +179,7 @@ if version >= 508 || !exists("did_clap_syntax_inits")
 "   HiLink ocamlEndErr       Error
     HiLink clapThenErr        Error
 " 
-"   HiLink ocamlCharErr       Error
+    HiLink clapCharErr        Error
 " 
 "   HiLink ocamlErr       Error
 " 
@@ -204,7 +213,7 @@ if version >= 508 || !exists("did_clap_syntax_inits")
 "   HiLink ocamlOperator       Keyword
 " 
     HiLink clapBoolean       Boolean
-"   HiLink ocamlCharacter    Character
+    HiLink clapCharacter     Character
     HiLink clapNumber        Number
     HiLink clapString        String
 " 
