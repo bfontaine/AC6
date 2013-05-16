@@ -18,6 +18,7 @@ let rec program p =
 
   (**
    * Evaluate a program with an environment.
+   *
    * @param p the program (list of definitions
    * @param e the environment
    * @return the new environment
@@ -186,33 +187,35 @@ let rec program p =
         | None    -> eval_branchs ev branchs' exp
         end
 
-  (* Evaluate a branch. It returns a value option. A branch is something like
+  (**
+   * Evaluate a branch. It returns a value option. A branch is something like
    * that :
    *
    *    pattern => expr
    *
-   *  patt : the pattern
-   *  br_exp : the expression in the branch
-   *  input_exp : the expression on which the branch is 'applied'
-   *  envt : the environment
-   * *)
+   * @param patt the pattern
+   * @param br_exp the expression in the branch
+   * @param input_exp the expression on which the branch is 'applied'
+   * @param envt the environment
+   **)
   and eval_branch patt br_exp input_exp envt = 
     match eval_pattern patt input_exp envt with
     | None       -> None 
     | Some envt' -> Some (eval_expr br_exp envt')
   
-  (* Evaluate a pattern sum. It returns a value option. 
+  (**
+   * Evaluate a pattern sum. It returns a value option. 
    * A PSum is something like that :
    *
    *   K[p]  ~  {K  <- v}
    *   constr[patt] ~ ex_c <- ex_v
    *
-   * constr : constructor_identifier
-   * patt   : pattern
-   * ex_c   : constructor_identifier with the expression
-   * ex_v   : pattern wiht the expression
-   * envt   : the environment
-   * *)
+   * @param constr constructor_identifier
+   * @param patt   pattern
+   * @param ex_c   constructor_identifier with the expression
+   * @param ex_v   pattern wiht the expression
+   * @param envt   the environment
+   **)
   and eval_psum constr patt ex_c ex_v envt =
     match patt with
     (* sum with sub-pattern *)
@@ -236,16 +239,18 @@ let rec program p =
           
           (* if not, it doesn't match. *)
           else None
-  (* Evaluate a pattern produit. It returns a value option.
+
+  (**
+   * Evaluate a pattern produit. It returns a value option.
    * A PSum is something like that :
    *  
    *  {K1 -> p1 ... kn -> pn} ~ {k1 -> v1 ... kn -> vn}
    *  {         px          } ~ {        ex_li        }
    *
-   * px    : list of contructor_identifier and pattern
-   * ex_li : list of construcor_identifier and value
-   * envt  : the environment
-   * *)
+   * @param px    list of contructor_identifier and pattern
+   * @param ex_li list of construcor_identifier and value
+   * @param envt  the environment
+   **)
   and eval_pprod px ex_li envt = 
     match (px,ex_li) with 
     |((c,p)::px' , (c',p')::ex_li' ) -> let envt' = eval_psum c p c' p' envt in 
