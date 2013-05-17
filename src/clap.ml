@@ -28,7 +28,7 @@ let parse_file filename =
   in
   SyntacticAnalysis.process
     ~lexer_init: (fun filename -> Lexing.from_channel (open_in filename))
-    ~lexer_fun: Lexer.main
+    ~lexer_fun: Lexer.top
     ~parser_fun: parser
     ~input: filename
 

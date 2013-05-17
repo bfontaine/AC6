@@ -24,7 +24,13 @@ let character = '\'' char_atom '\''       (** char litterals *)
 let str = '"' str_atom * '"'  (** string litterals *)
 let layout = [ ' ' '\t' '\r' '\n']
 
-rule main = parse
+(* This rule is used only to parse the shebang (if there's one) at the beginning
+ * of the file. *)
+rule top = parse
+  "#!"           { line_comment lexbuf }
+| ""             { main lexbuf }
+
+and main = parse
   layout         { main lexbuf }
 | '|'            { PIPE }
 | '('            { L_PAREN }
