@@ -1,0 +1,2 @@
+val x = if 'e' then 42 else 36
+
