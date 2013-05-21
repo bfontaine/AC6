@@ -29,8 +29,8 @@ let program p =
             (* evaluate the definition, and iter on the
              * rest of the program *)
             let e' = begin match d with
-            | DType(v) -> e 
-            | DVal(v) -> check_vdef v e
+            | DType(_) -> failwith "DType Not implemented"   
+            | DVal(_)  -> failwith "DVal  Not implemented"
             end in check_type defs e'
     in
       check_type p (e) 
