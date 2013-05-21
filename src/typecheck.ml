@@ -1,6 +1,18 @@
 open Ast
 open Runtime
 
+
+type env = (value_identifier * type_value option ref ) list
+
+type type_value = 
+| TInt
+| TChar
+| TString
+| TBool
+| TCustom of string 
+| TFun of type_value * type_value
+
+
 let flag = ref false
 
 (**
@@ -33,14 +45,14 @@ let program p =
 
     and check_vdef x env =
         match x match 
-        | Simple(_, exp )       -> failwith "Simple Not implemented" 
+        | Simple(_, exp )       -> check_exp exp env 
         | MutuallyRecursive(_)  -> failwith "MutuallyRecursive Not implemented"
 
     and check_exp exp env = 
         match exp with
-        | EChar(_)      -> failwith "EChar ot implemented" 
-        | EInt(_)       -> failwith "EInt ot implemented" 
-        | EString(_)    -> failwith "EString ot implemented" 
+        | EChar(c)      -> TChar 
+        | EInt(i)       -> TInt
+        | EString(s)    -> TString
         | EAnnot(_,_)   -> failwith "EAnnot ot implemented" 
         | EApp(_,_)     -> failwith "EApp ot implemented" 
         | ESum(_,_,_)   -> failwith "ESum ot implemented" 
