@@ -79,5 +79,20 @@ let program p =
         | EFun(_,_)     -> failwith "EFun ot implemented" 
         | EDef(_,_)     -> failwith "EDef ot implemented" 
         | ESeq(_)       -> failwith "ESeq ot implemented" 
+
+   and check_typ ty env =
+        match ty with 
+        (** Type constructor application. *)
+        | TVar(_,_) ->    
+        (** Function types.               *) 
+        | TArrow(_,_)     
+        (** Sum types.                    *)
+        | TSum(_)            
+        (** Product types.                *)
+        | TProd(_)           
+        (** Recursive types.              *)
+        | TRec(_,_)
+
+
     in
       check_program p (empty ()) 
