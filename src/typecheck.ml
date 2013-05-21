@@ -12,6 +12,18 @@ type type_value =
 | TCustom of string 
 | TFun of type_value * type_value
 
+let empty () = []
+
+let bind x t env = 
+  match x with 
+  | Unnamed -> env
+  | Named x -> (x, ref (Some t)) :: env
+
+let declare x env = 
+  match x with
+  | Unnamed -> env
+  | Named x -> (x, ref None) :: env
+
 
 let flag = ref false
 
@@ -30,7 +42,7 @@ let program p =
     * @param e the environment
     * @return unit
     **)
-    let rec check_type p e = 
+    let rec check_program p e = 
         match p with
         (* No definitions *)
         | [] -> e
@@ -45,15 +57,21 @@ let program p =
 
     and check_vdef x env =
         match x match 
-        | Simple(_, exp )       -> check_exp exp env 
+        | Simple(Binding(arg,ty), exp )    -> let ty' = 
+            begin match ty with 
+            | None -> eval_exp exp env 
+            | Some x -> failwith "typ Not implemented" 
+            end 
+             in bind arg ty' env
         | MutuallyRecursive(_)  -> failwith "MutuallyRecursive Not implemented"
+
 
     and check_exp exp env = 
         match exp with
         | EChar(c)      -> TChar 
         | EInt(i)       -> TInt
         | EString(s)    -> TString
-        | EAnnot(_,_)   -> failwith "EAnnot ot implemented" 
+        | EAnnot(ex,ty) -> failwith "EAnnot ot implemented" 
         | EApp(_,_)     -> failwith "EApp ot implemented" 
         | ESum(_,_,_)   -> failwith "ESum ot implemented" 
         | EProd(_,_)    -> failwith "EProd ot implemented" 
@@ -62,4 +80,4 @@ let program p =
         | EDef(_,_)     -> failwith "EDef ot implemented" 
         | ESeq(_)       -> failwith "ESeq ot implemented" 
     in
-      check_type p (e) 
+      check_program p (empty ()) 
