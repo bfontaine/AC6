@@ -1,0 +1,2 @@
+val x = if "true" then 42 else 36
+
