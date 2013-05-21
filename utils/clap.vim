@@ -41,6 +41,9 @@ syn region   clapComment start="(\*" end="\*)" contains=clapComment,clapTodo
 syn region   clapLineComment start="\*\*" end="$" oneline contains=clapTodo
 syn keyword  clapTodo contained TODO FIXME XXX NOTE
 
+" Non-standard
+syn match    clapComment "\%^#!.*"
+
 " If
 syn region clapNone matchgroup=clapKeyword start="\<if\>" matchgroup=clapKeyword end="\<then\>" contains=ALLBUT,@clapContained,clapThenErr
 
