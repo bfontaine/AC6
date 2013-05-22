@@ -14,6 +14,9 @@ let options = Arg.align [
   "--bench", Arg.Set benchmark, 
   " Benchmark.";
 
+  "--debug", Arg.Set Debug.flag,
+  " Debug mode.";
+
   "--memo", Arg.Set Memo.flag, 
   " Memoization";
 
@@ -22,7 +25,7 @@ let options = Arg.align [
 
   (* experimental *)
   "--repl", Arg.Set repl,
-  "Use a REPL instead of the provided files."
+  " Use a REPL instead of the provided files."
 ]
 
 (* helper function *)
