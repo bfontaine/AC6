@@ -6,7 +6,11 @@ type value = Primitive.t Runtime.value
 type env = Primitive.t Runtime.venv
 
 (* The hashtable used for the memoization *)
-let memo = Hashtbl.create 42
+let memo =
+  if !Memo.flag then
+    Hashtbl.create 42
+  else
+    Hashtbl.create 0
 
 (**
  * Evaluate a program with an environment.
