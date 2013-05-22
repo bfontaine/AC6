@@ -1,0 +1,4 @@
+** int -> int
+val f = fun (x) => (x + x)
+
+val _ = f ("42")

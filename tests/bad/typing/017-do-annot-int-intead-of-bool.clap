@@ -1,0 +1,1 @@
+val x = (do { True } : int )

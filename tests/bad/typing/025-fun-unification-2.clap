@@ -1,0 +1,4 @@
+** int -> int
+val f = fun (x) => ((x:int) = x)
+
+val _ = f ('c')
