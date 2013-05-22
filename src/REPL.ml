@@ -1,11 +1,14 @@
+let repl_version = "0.1.0"
 
 let print_prompt () =
   (print_string "clap> ")
 
-(**
- * print a prompt and read an entry from the user. It keeps reading until the
- * user press <enter> on an empty line.
- **)
+let print_banner () =
+  print_string ("** Clap REPL v" ^ repl_version ^ "\n");
+  print_string "**\n";
+  print_string "** Press ^D to exit.\n";
+  print_string "**\n"
+
 let read_entry () =
   print_prompt ();
   let rec read_lines previous =
