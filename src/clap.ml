@@ -70,10 +70,12 @@ let process_file filename =
     output (Runtime.print_environment result)
   )
 
-(* REPL support *)
 let asts =
-  if !repl
+  if not !repl
   then
+    List.map process_file !filenames
+(* REPL support *)
+  else
     (REPL.print_banner ();
     let rec eval_loop ev =
       try
@@ -110,6 +112,4 @@ let asts =
           eval_loop ev
     in
       eval_loop (Runtime.Env.empty ()); [])
-  else
 (* /REPL support *)
-    List.map process_file !filenames
