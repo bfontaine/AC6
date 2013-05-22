@@ -1,5 +1,4 @@
 open AST
-open Operator
 
 let flag = ref false
 
@@ -33,7 +32,7 @@ let declare x env =
 
 let identifier p = 
   let p = AST.EVar p in
-  is_binop p || is_unop p
+  Operator.is_binop p || Operator.is_unop p
 
 let ( --> ) x y = 
   match x with 
@@ -41,21 +40,21 @@ let ( --> ) x y =
   | _ -> assert false
  
 let lookup x = List.assoc x [
-  minus       --> TFun(TInt,TFun(TInt,TInt));
-  plus        --> TFun(TInt,TFun(TInt,TInt)); 
-  star        --> TFun(TInt,TFun(TInt,TInt)); 
-  slash       --> TFun(TInt,TFun(TInt,TInt));     
-  percent     --> TFun(TInt,TFun(TInt,TInt)); 
-  eq          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
-  bangeq      --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
-  andand      --> TFun(TBool,TFun(TBool,TBool)); 
-  pipepipe    --> TFun(TBool,TFun(TBool,TBool)); 
-  le          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
-  ge          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
-  lt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
-  gt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
-  negate      --> TFun(TInt,TInt); 
-  boolean_not --> TFun(TBool,TBool);   
+ Operator.minus       --> TFun(TInt,TFun(TInt,TInt));
+ Operator.plus        --> TFun(TInt,TFun(TInt,TInt)); 
+ Operator.star        --> TFun(TInt,TFun(TInt,TInt)); 
+ Operator.slash       --> TFun(TInt,TFun(TInt,TInt));     
+ Operator.percent     --> TFun(TInt,TFun(TInt,TInt)); 
+ Operator.eq          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
+ Operator.bangeq      --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
+ Operator.andand      --> TFun(TBool,TFun(TBool,TBool)); 
+ Operator.pipepipe    --> TFun(TBool,TFun(TBool,TBool)); 
+ Operator.le          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+ Operator.ge          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+ Operator.lt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+ Operator.gt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+ Operator.negate      --> TFun(TInt,TInt); 
+ Operator.boolean_not --> TFun(TBool,TBool);   
 ]
 
 
