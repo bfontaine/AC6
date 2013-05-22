@@ -58,6 +58,7 @@ let lookup x = List.assoc x [
 ]
 
 exception UndeclaredVariable of value_identifier
+exception SimpleErrorTyping
 
 let rec lookup_ref x env = 
     match env with
@@ -97,7 +98,7 @@ let program p =
 
   and check_vdef v e =
     match v with
-    | Simple(Binding(i, ty), ex) -> bind i (check_expr ex e) e
+    | Simple(Binding(i, ty), ex) -> check_simple i ty ex e 
     | MutuallyRecursive(l) -> failwith "MutuallyRecursive Not implemented"
 
   and check_expr exp e =
@@ -123,6 +124,14 @@ let program p =
      | ECase(_,_)	-> failwith "ECase Not implemented"
      | EFun(_,_)    -> failwith "EFun Not implemented" 
 
+  and check_simple i ty ex e =
+    let ty'= check_expr ex e in
+    begin match ty with 
+     | None   -> bind i ty' e
+     | Some p -> let ty'' = check_typ p e in
+        if ty'' = ty' then bind i ty' e
+        else raise SimpleErrorTyping
+    end
   and check_eseq es e =
       match es with
         | [] -> TUnit
@@ -132,8 +141,13 @@ let program p =
           let _ = check_expr ex e in
              check_eseq es' e
 
-
-
+  and check_typ ty e =
+    match ty with 
+    | TVar(_,_)     -> failwith "TVar Not implemented" 
+    | TArrow(_,_)   -> failwith "TArrow Not implemented" 
+    | TSum(_)       -> failwith "TSum Not implemented" 
+    | TProd(_)      -> failwith "TProd Not implemented" 
+    | TRec(_)       -> failwith "TRec Not implemented" 
   in 
   if !flag then 
      check p (empty ())
