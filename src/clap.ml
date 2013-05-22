@@ -2,6 +2,7 @@
 let pretty_print = ref false
 let parse_only = ref false
 let benchmark = ref false
+let repl = ref false
 
 let options = Arg.align [
   "-p", Arg.Set pretty_print, 
@@ -17,20 +18,28 @@ let options = Arg.align [
   " Memoization";
 
   "--type", Arg.Set Typecheck.flag, 
-  " Typecheck before evaluation."
+  " Typecheck before evaluation.";
+
+  (* experimental *)
+  "--repl", Arg.Set repl,
+  "Use a REPL instead of the provided files."
 ]
 
-let parse_file filename =
+(* helper function *)
+let parse_input lex filename =
   let parser lexer lexbuf = try
     Parser.program lexer lexbuf
   with
   | Parser.Error -> Error.error "Parsing" (Position.cpos lexbuf) "Unknown error.\n"
   in
   SyntacticAnalysis.process
-    ~lexer_init: (fun filename -> Lexing.from_channel (open_in filename))
+    ~lexer_init: (fun _ -> lex)
     ~lexer_fun: Lexer.top
     ~parser_fun: parser
     ~input: filename
+
+let parse_file filename =
+  parse_input (Lexing.from_channel (open_in filename)) filename
 
 let filenames = ref []
 
@@ -57,5 +66,47 @@ let process_file filename =
       output (Pprint.text (Printf.sprintf "TIME[%07.3fs %s]\n" time filename));
     output (Runtime.print_environment result)
   )
-  
-let asts = List.map process_file !filenames
+
+(* REPL support *)
+let asts =
+  if !repl
+  then
+    (REPL.print_banner ();
+    let rec eval_loop ev =
+      try
+        let ast =
+          parse_input (Lexing.from_string (REPL.read_entry ())) "(repl)" in
+          let ev = Interpreter.eval ast ev in
+            output (Runtime.print_environment ev);
+            eval_loop ev
+      with
+        End_of_file -> ()
+      
+      | Runtime.Env.UndeclaredVariable (AST.Identifier x) ->
+          print_string ("Error: Undeclared variable '" ^ x ^ "'.\n");
+          eval_loop ev
+
+      | Runtime.Env.UndefinedVariable (AST.Identifier x) ->
+          print_string ("Error: Undefined variable '" ^ x ^ "'.\n");
+          eval_loop ev
+      
+      | Runtime.Env.DefiningUndeclaredVariable (AST.Identifier x) ->
+          print_string ("Error: I can't define '" ^ x ^ "', it's undeclared.\n");
+          eval_loop ev
+      
+      | Runtime.Env.CannotLookupAnonymous ->
+          print_string "Error: Cannot lookup anonymous.\n";
+          eval_loop ev
+      
+      | Runtime.Env.CannotDefineAnonymous ->
+          print_string "Error: Cannot define anonymous.\n";
+          eval_loop ev
+      
+      | Primitive.InvalidPrimitiveCall ->
+          print_string "Error: Invalid primitive call.\n";
+          eval_loop ev
+    in
+      eval_loop (Runtime.Env.empty ()); [])
+  else
+(* /REPL support *)
+    List.map process_file !filenames
