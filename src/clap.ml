@@ -2,6 +2,7 @@
 let pretty_print = ref false
 let parse_only = ref false
 let benchmark = ref false
+let repl = ref false
 
 let options = Arg.align [
   "-p", Arg.Set pretty_print, 
@@ -17,7 +18,11 @@ let options = Arg.align [
   " Memoization";
 
   "--type", Arg.Set Typecheck.flag, 
-  " Typecheck before evaluation."
+  " Typecheck before evaluation.";
+
+  (* experimental *)
+  "--repl", Arg.Set repl,
+  "Use a REPL instead of the provided files."
 ]
 
 let parse_file filename =
@@ -57,5 +62,33 @@ let process_file filename =
       output (Pprint.text (Printf.sprintf "TIME[%07.3fs %s]\n" time filename));
     output (Runtime.print_environment result)
   )
-  
-let asts = List.map process_file !filenames
+
+(* EXPERIMENTAL *)
+let asts =
+  if !repl
+  then
+    let rec parse_input inp =
+      let parser lexer lexbuf = try
+        Parser.program lexer lexbuf
+      with
+      | Parser.Error -> Error.error "Parsing" (Position.cpos lexbuf) "Unknown error.\n"
+      in
+      SyntacticAnalysis.process
+        ~lexer_init: (fun _ -> Lexing.from_string inp)
+        ~lexer_fun: Lexer.top
+        ~parser_fun: parser
+        ~input: "(repl)"
+
+    and eval_loop ev =
+      try
+        let ast = parse_input (REPL.read_entry ()) in
+          let ev = Interpreter.eval ast ev in
+            output (Runtime.print_environment ev);
+            eval_loop ev
+      with End_of_file -> ()
+
+    in
+      eval_loop (Runtime.Env.empty ()); []
+  else
+(* /EXPERIMENTAL *)
+    List.map process_file !filenames
