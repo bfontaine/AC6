@@ -45,6 +45,10 @@
 ./src/typecheck.ml
 ./src/typecheck.mli
 ./src/userInput.ml
+./src/debug.ml
+./src/debug.mli
+./src/REPL.ml
+./src/REPL.mli
 ./tests
 ./tests/Makefile
 ./tests/Makefile.test
