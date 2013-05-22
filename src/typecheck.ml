@@ -36,9 +36,13 @@ let program p =
          * rest of the program *)
         let e' = begin match d with
           | DType(ty_id,ty_ids,ty)-> failwith "DType Not implemented"
-          | DVal(v) -> failwith "DVal Not implemented"
+          | DVal(v) -> check_vdef v e 
         end in check defs e'
 
+  and check_vdef v e =
+    match v with
+    | Simple(Binding(i, ty), ex) -> failwith "Simple Not implemented"
+    | MutuallyRecursive(l) -> failwith "MutuallyRecursive Not implemented"
 
   in 
   if !flag then 
