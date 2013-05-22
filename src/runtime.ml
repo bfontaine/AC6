@@ -155,5 +155,6 @@ let print_environment env =
   ) (Env.entries env))
 
 let canonicalize s = 
+  (* TODO may be optimized? *)
   List.sort (fun (k, _) (k', _) -> compare k k') s
 

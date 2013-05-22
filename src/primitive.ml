@@ -96,6 +96,9 @@ let generic_assignment v1 v2 =
   | _ -> raise InvalidPrimitiveCall
 
 let mk_prim, is_prim = 
+  (* We could use a Set, since we're only testing for the existence
+     of an element, but a lookup in a Hashtbl is in O(1), while it's
+     in O(log n) in a Set (see the manual). *)
   let ps = Hashtbl.create 13 in
   (fun id code -> 
     let id = EVar (Identifier id) in 
@@ -151,7 +154,7 @@ let lookup x =
 let apply p v = 
   match p with
   | PCode f -> f v
-  | PRef _ -> raise InvalidPrimitiveCall
+  | _       -> raise InvalidPrimitiveCall
 
 let identifier p = 
   let p = AST.EVar p in
