@@ -31,7 +31,14 @@ let program p =
       (* No definitions *)
       | [] -> ()
       (* One or more definitions *)
-      | d::vdef -> failwith "Defs Not implemented" 
+      | d::defs -> 
+        (* Check the definition, and iter on the
+         * rest of the program *)
+        let e' = begin match d with
+          | DType(ty_id,ty_ids,ty)-> failwith "DType Not implemented"
+          | DVal(v) -> failwith "DVal Not implemented"
+        end in check defs e'
+
 
   in 
   if !flag then 
