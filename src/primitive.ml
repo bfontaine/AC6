@@ -6,9 +6,12 @@ type t =
 | PRef  of (t value) ref
 | PCode of (t value -> t value)
 
+type primitive = Prim of t Runtime.value
+let primitives = Hashtbl.create 20
+
 let ( --> ) x y = 
   match x with 
-  | AST.EVar x -> (x, y)
+  | AST.EVar x -> Hashtbl.add primitives x y
   | _ -> assert false
 
 exception InvalidPrimitiveCall 
@@ -111,26 +114,28 @@ let read, read_code = mk_prim "read" (
   | _ -> raise InvalidPrimitiveCall
 )
 
-let lookup x = List.assoc x [
-  minus       --> binary_operator (int_int_int ( - ));
-  plus        --> binary_operator (int_int_int ( + ));
-  star        --> binary_operator (int_int_int ( * ));
-  slash       --> binary_operator (int_int_int ( / ));    
-  percent     --> binary_operator (int_int_int ( mod ));
-  eq          --> binary_operator generic_equality;
-  bangeq      --> binary_operator generic_disequality;
-  coloneq     --> binary_operator generic_assignment;
-  andand      --> binary_operator (bool_bool_bool ( && ));
-  pipepipe    --> binary_operator (bool_bool_bool ( || ));
-  le          --> binary_operator (int_int_bool ( <= ));
-  ge          --> binary_operator (int_int_bool ( >= ));
-  lt          --> binary_operator (int_int_bool ( < ));
-  gt          --> binary_operator (int_int_bool ( > ));
-  negate      --> unary_operator pnegate;
-  boolean_not --> unary_operator pnot;  
-  alloc       --> alloc_code;
-  read        --> read_code;
-]
+let _ =
+  minus       --> Prim (binary_operator (int_int_int ( - )));
+  plus        --> Prim (binary_operator (int_int_int ( + )));
+  star        --> Prim (binary_operator (int_int_int ( * )));
+  slash       --> Prim (binary_operator (int_int_int ( / )));
+  percent     --> Prim (binary_operator (int_int_int ( mod )));
+  eq          --> Prim (binary_operator generic_equality);
+  bangeq      --> Prim (binary_operator generic_disequality);
+  coloneq     --> Prim (binary_operator generic_assignment);
+  andand      --> Prim (binary_operator (bool_bool_bool ( && )));
+  pipepipe    --> Prim (binary_operator (bool_bool_bool ( || )));
+  le          --> Prim (binary_operator (int_int_bool ( <= )));
+  ge          --> Prim (binary_operator (int_int_bool ( >= )));
+  lt          --> Prim (binary_operator (int_int_bool ( < )));
+  gt          --> Prim (binary_operator (int_int_bool ( > )));
+  negate      --> Prim (unary_operator pnegate);
+  boolean_not --> Prim (unary_operator pnot);
+  alloc       --> Prim alloc_code;
+  read        --> Prim read_code
+
+let lookup x =
+  (fun (Prim x) -> x) (Hashtbl.find primitives x)
 
 let apply p v = 
   match p with
