@@ -3,16 +3,11 @@ open Operator
 
 let flag = ref false
 
-let env = (value_identifier * value_type option ref)list
+type value_type = TUnit | TInt | TChar | TString | TBool 
+    | TCustom  of value_type
+    | TFun of value_type * value_type
 
-let value_type = 
-    | TInt 
-    | TChar
-    | TString
-    | TBool
-    | TCustom value_type
-    | TFun value_type * value_type
-
+type env = (value_identifier * value_type option ref)list
 
 let program p = 
   if !flag then 
