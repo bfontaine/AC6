@@ -20,21 +20,6 @@ syn case match
 
 syn match    clapCommentErr "\*)"
 syn match    clapThenErr    "\<then\>"
-" 
-" " Some convenient clusters
-" syn cluster  ocamlAllErrs contains=ocamlBraceErr,ocamlBrackErr,ocamlParenErr,ocamlCommentErr,ocamlCountErr,ocamlDoErr,ocamlDoneErr,ocamlEndErr,ocamlThenErr
-" 
-" syn cluster  ocamlAENoParen contains=ocamlBraceErr,ocamlBrackErr,ocamlCommentErr,ocamlCountErr,ocamlDoErr,ocamlDoneErr,ocamlEndErr,ocamlThenErr
-" 
-" syn cluster  ocamlContained contains=ocamlTodo,ocamlPreDef,ocamlModParam,ocamlModParam1,ocamlPreMPRestr,ocamlMPRestr,ocamlMPRestr1,ocamlMPRestr2,ocamlMPRestr3,ocamlModRHS,ocamlFuncWith,ocamlFuncStruct,ocamlModTypeRestr,ocamlModTRWith,ocamlWith,ocamlWithRest,ocamlModType,ocamlFullMod,ocamlVal
-" 
-" 
-" " Enclosing delimiters
-" syn region   ocamlEncl transparent matchgroup=ocamlKeyword start="(" matchgroup=ocamlKeyword end=")" contains=ALLBUT,@ocamlContained,ocamlParenErr
-" syn region   ocamlEncl transparent matchgroup=ocamlKeyword start="{" matchgroup=ocamlKeyword end="}"  contains=ALLBUT,@ocamlContained,ocamlBraceErr
-" syn region   ocamlEncl transparent matchgroup=ocamlKeyword start="\[" matchgroup=ocamlKeyword end="\]" contains=ALLBUT,@ocamlContained,ocamlBrackErr
-" syn region   ocamlEncl transparent matchgroup=ocamlKeyword start="\[|" matchgroup=ocamlKeyword end="|\]" contains=ALLBUT,@ocamlContained,ocamlArrErr
-
 
 " Comments
 syn region   clapComment start="(\*" end="\*)" contains=clapComment,clapTodo
@@ -45,15 +30,29 @@ syn keyword  clapTodo contained TODO FIXME XXX NOTE
 syn match    clapComment "\%^#!.*"
 
 " If
-syn region clapNone matchgroup=clapKeyword start="\<if\>" matchgroup=clapKeyword end="\<then\>" contains=ALLBUT,@clapContained,clapThenErr
+" syn region clapNone matchgroup=clapKeyword start="\<if\>" matchgroup=clapKeyword end="\<then\>" contains=ALLBUT,clapThenErr
 
-syn keyword clapKeyword and at case def
+" types
+syn cluster clapType contains=clapIdentifierLC
+
+" constructors
+syn cluster clapConstructor contains=clapIdentifierHC
+
+syn cluster clapKeywords contains=clapAt,clapKeyword
+
+syn keyword clapAt      at
+syn keyword clapKeyword and case def
 syn keyword clapKeyword do else end fun
 syn keyword clapKeyword if in is not or
 syn keyword clapKeyword rec then type val
 syn keyword clapKeyword where with
 
+syn match clapColon ":"
+
 syn keyword clapBoolean True False
+
+syn match    clapIdentifierLC "[a-z]\w*"
+syn match    clapIdentifierHC "[A-Z]\w*"
 
 syn match    clapCharacter    "'[\x20-\x26\x28-\x5B\x5D-\x7E]'"
 syn match    clapCharacter    "'\\[\\ntbr']'"
@@ -74,20 +73,20 @@ syn match    clapOperator     "&&"
 syn match    clapOperator     "<"
 syn match    clapOperator     ">"
 
+syn match    clapOperator     "->"
+syn match    clapOperator     "=>"
+syn match    clapOperator     "<-"
+
 syn match    clapAnyPattern   "\<_\>"
 syn match    clapEmptyPattern "\<0\>"
-
-" syn match    ocamlKeyChar      ";"
-" syn match    ocamlKeyChar      "\~"
-" syn match    ocamlKeyChar      "?"
-" syn match    ocamlKeyChar      "\*"
-" syn match    ocamlKeyChar      "="
 
 syn match clapNumber "\<-\=\d\+\>"
 syn match clapNumber "\<-\=0x\x\+\>"
 syn match clapNumber "\<-\=0b[01]\+\>"
 
-syn keyword clapPrimitive alloc read
+syn keyword clapPrimitive alloc read print
+
+syn keyword clapType string char bool int unit
 
 " Synchronization
 syn sync minlines=50
@@ -113,6 +112,10 @@ if version >= 508 || !exists("did_clap_syntax_inits")
   HiLink clapComment        Comment
   HiLink clapLineComment    Comment
 
+  HiLink clapIdentifierLC   Identifier
+  HiLink clapIdentifierHC   Identifier
+
+  HiLink clapAt             Keyword
   HiLink clapKeyword        Keyword
   HiLink clapRefAssign      Keyword
   HiLink ocamlOperator      Keyword
@@ -122,9 +125,7 @@ if version >= 508 || !exists("did_clap_syntax_inits")
   HiLink clapNumber         Number
   HiLink clapString         String
 
-" HiLink ocamlLabel         Identifier
-" HiLink ocamlType          Type
-" HiLink ocamlKeyChar       Keyword
+  HiLink clapType           Type
   HiLink clapAnyPattern     Keyword
 
   HiLink clapTodo           Todo
