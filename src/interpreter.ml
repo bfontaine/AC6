@@ -167,9 +167,17 @@ and eval_eseq es ev = match es with
  * @ev the current environment
  **)
 and eval_memo_vclosure ev branchs expr =
-  if Hashtbl.mem memo branchs
-  then Hashtbl.find memo branchs
-  else
+  (*
+    Using
+      try find with Not_found -> compute and memorize
+    seems to be faster than
+      if mem then find else      compute and memorize
+
+    see: http://stackoverflow.com/a/12161946/735926
+   *)
+  try
+      Hashtbl.find memo branchs
+  with Not_found ->
     let result = eval_branchs ev branchs expr in
       Hashtbl.add memo branchs result;
       result
@@ -250,10 +258,10 @@ and eval_psum constr patt ex_c ex_v envt =
  * @param envt  the environment
  **)
 and eval_pprod px ex_li envt =
-  match (px,ex_li) with
-  |((c,p)::px' , (c',p')::ex_li' ) -> let envt' = eval_psum c p c' p' envt in
-      begin match envt' with
-      | Some envt'' -> eval_pprod px' ex_li' envt''
+  match (px, ex_li) with
+  | ( (c, p)::px' , (c', p')::ex_li' ) ->
+      begin match eval_psum c p c' p' envt with
+      | Some envt' -> eval_pprod px' ex_li' envt'
       | None -> None
       end
   |([],[]) -> Some envt
