@@ -114,6 +114,16 @@ let read, read_code = mk_prim "read" (
   | _ -> raise InvalidPrimitiveCall
 )
 
+let print, generic_print = mk_prim "print" (
+  function
+    | VInt i        -> print_int    i; vunit
+    | VChar c       -> print_char   c; vunit
+    | VString s     -> print_string s; vunit
+    | VStruct _     -> print_string "{struct}"; vunit
+    | VClosure(_,_) -> print_string "{closure}"; vunit
+    | VPrimitive _  -> print_string "{primitive}"; vunit
+)
+
 let _ =
   minus       --> Prim (binary_operator (int_int_int ( - )));
   plus        --> Prim (binary_operator (int_int_int ( + )));
@@ -132,7 +142,8 @@ let _ =
   negate      --> Prim (unary_operator pnegate);
   boolean_not --> Prim (unary_operator pnot);
   alloc       --> Prim alloc_code;
-  read        --> Prim read_code
+  read        --> Prim read_code;
+  print       --> Prim generic_print
 
 let lookup x =
   (fun (Prim x) -> x) (Hashtbl.find primitives x)
