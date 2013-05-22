@@ -1,0 +1,1 @@
+val x = (fun (i : int) => i) "42"

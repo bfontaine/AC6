@@ -1,0 +1,3 @@
+type t1 = { A }
+type t2 = { B }
+val x : t1 = ({ B } : t2)

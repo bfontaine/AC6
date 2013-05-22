@@ -1,0 +1,2 @@
+** int -> int != string -> int
+val f : (int -> int) = fun (x : string) => 42

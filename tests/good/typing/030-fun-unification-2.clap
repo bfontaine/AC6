@@ -1,0 +1,1 @@
+val f = fun (x : int) => x

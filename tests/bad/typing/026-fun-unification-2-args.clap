@@ -1,0 +1,4 @@
+** 'a -> int -> bool
+val f = fun (x) (y) => (x = (y + 1))
+
+val _ = (f (42))("toto")
