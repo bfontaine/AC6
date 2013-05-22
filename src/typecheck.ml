@@ -116,17 +116,23 @@ let program p =
             | None -> raise (UndeclaredVariable v)
             end
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
+     
      | EProd(_,_)	-> failwith "EProd Not implemented"
+     
      | EAnnot(ex,ty)	->
         let t_ty = check_typ ty e in
         let t_ex = check_expr ex e in
         if t_ty = t_ex then t_ty
         else raise EAnnotErrorTypping
+            
      | ESeq(es)     -> check_eseq es e
+     
      | EDef(v,exp2)    ->
         check_expr exp2 (check_vdef v e)
      | EApp(_,_)    -> failwith "EApp Not implemented"
+     
      | ECase(_,_)	-> failwith "ECase Not implemented"
+     
      | EFun(bs,exp)    -> failwith "EFun Not implemented" 
 
   and check_simple i ty ex e =
