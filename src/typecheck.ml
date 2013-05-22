@@ -42,7 +42,7 @@ let program p =
     * @param e the environment
     * @return unit
     **)
-    let rec check_program p e = 
+    let rec check_defs p e = 
         match p with
         (* No definitions *)
         | [] -> e
@@ -53,10 +53,10 @@ let program p =
             let e' = begin match d with
             | DType(_) -> failwith "DType Not implemented"   
             | DVal(v)  -> check_vdef v e
-            end in check_type defs e'
+            end in (check_defs defs e')
 
-    and check_vdef x env =
-        match x match 
+    and check_vdef v env =
+        match v match 
         | Simple(Binding(arg,ty), exp )    -> let ty' = 
             begin match ty with 
             | None -> eval_exp exp env 
