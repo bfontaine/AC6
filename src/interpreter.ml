@@ -178,7 +178,7 @@ let rec program p =
   (* evaluate a list of branchs, given an expression *)
   and eval_branchs ev branchs exp =
     match branchs with
-    | [] -> vunit
+    | [] -> failwith "This pattern did not match!"
     | Branch(p, exp')::branchs' ->
         begin match (eval_branch p exp' exp ev) with
         (* if this branch matches, return the new environment *)

@@ -1,2 +1,0 @@
-val c = (case { A[x] => x })(A)
-
