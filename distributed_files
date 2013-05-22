@@ -53,6 +53,10 @@
 ./tests/bad/lexical/Makefile
 ./tests/bad/syntax
 ./tests/bad/syntax/Makefile
+./tests/bad/interpret
+./tests/bad/interpret/Makefile
+./tests/bad/typing
+./tests/bad/typing/Makefile
 ./tests/good
 ./tests/good/lexical
 ./tests/good/lexical/Makefile
@@ -60,3 +64,11 @@
 ./tests/good/syntax/Makefile
 ./tests/good/interpret
 ./tests/good/interpret/Makefile
+./tests/good/memo
+./tests/good/memo/Makefile
+./tests/good/typing
+./tests/good/typing/Makefile
+./utils
+./utils/bash_completion.sh
+./utils/clap.vim
+./utils/get_server_tests.rb
