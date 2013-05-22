@@ -1,4 +1,4 @@
-open AST 
+open AST
 open Runtime
 
 type value = Primitive.t Runtime.value
@@ -58,7 +58,7 @@ and eval_mutually_recursive l e =
 
     | _::lx -> (* Unnamed *)
         bind_bodies lx e
-  
+
   in
     bind_bodies l (fill_env_with_empty_defs l e)
 
@@ -96,7 +96,7 @@ and eval_expr exp e = match exp with
             (if !Memo.flag
             then eval_memo_vclosure
             else eval_branchs) ev branchs (eval_expr e1 e)
-        
+
         | VInt(_)
         | VChar(_)
         | VString(_)
@@ -197,13 +197,13 @@ and eval_branchs ev branchs exp =
  * @param input_exp the expression on which the branch is 'applied'
  * @param envt the environment
  **)
-and eval_branch patt br_exp input_exp envt = 
+and eval_branch patt br_exp input_exp envt =
   match eval_pattern patt input_exp envt with
-  | None       -> None 
+  | None       -> None
   | Some envt' -> Some (eval_expr br_exp envt')
 
 (**
- * Evaluate a pattern sum. It returns a value option. 
+ * Evaluate a pattern sum. It returns a value option.
  * A PSum is something like that :
  *
  *   K[p]  ~  {K  <- v}
@@ -212,15 +212,15 @@ and eval_branch patt br_exp input_exp envt =
  * @param constr constructor_identifier
  * @param patt   pattern
  * @param ex_c   constructor_identifier with the expression
- * @param ex_v   pattern wiht the expression
+ * @param ex_v   pattern with the expression
  * @param envt   the environment
  **)
 and eval_psum constr patt ex_c ex_v envt =
-  match patt with
+  match patt, (constr = ex_c) with
   (* sum with sub-pattern *)
-  | Some p -> 
+  | Some p, true ->
       (* ...and if constructor ids match... *)
-      if ex_c = constr then begin match ex_v with
+      begin match ex_v with
 
       (* ...then if the expression is something like A, don't match. *)
       | None    -> None
@@ -228,21 +228,20 @@ and eval_psum constr patt ex_c ex_v envt =
       (* ...else if the expression is something like A[x],
          try to match p with x. *)
       | Some v' -> eval_pattern p v' envt
-      (* If constructor ids don't match, the pattern doesn't match *)
-       end else None
+      end
 
   (* sum without sub-pattern  *)
-  | None ->
-    (* ...and the constructor ids match, then the pattern matches *) 
-        if constr = ex_c then Some envt
-        
-        (* if not, it doesn't match. *)
-        else None
+  | None, true ->
+    (* ...and the constructor ids match, then the pattern matches *)
+        Some envt
+
+  (* if not, it doesn't match. *)
+  | _ -> None
 
 (**
  * Evaluate a pattern produit. It returns a value option.
  * A PSum is something like that :
- *  
+ *
  *  {K1 -> p1 ... kn -> pn} ~ {k1 -> v1 ... kn -> vn}
  *  {         px          } ~ {        ex_li        }
  *
@@ -250,9 +249,9 @@ and eval_psum constr patt ex_c ex_v envt =
  * @param ex_li list of construcor_identifier and value
  * @param envt  the environment
  **)
-and eval_pprod px ex_li envt = 
-  match (px,ex_li) with 
-  |((c,p)::px' , (c',p')::ex_li' ) -> let envt' = eval_psum c p c' p' envt in 
+and eval_pprod px ex_li envt =
+  match (px,ex_li) with
+  |((c,p)::px' , (c',p')::ex_li' ) -> let envt' = eval_psum c p c' p' envt in
       begin match envt' with
       | Some envt'' -> eval_pprod px' ex_li' envt''
       | None -> None
@@ -265,16 +264,16 @@ and eval_pattern patt exp envt =
   match patt with
 
   (* | A[p] => ... *)
-  | PSum(c, _,p ) -> 
-      begin match exp with 
+  | PSum(c, _, p ) ->
+      begin match exp with
       (* If the given expression is a sum ...*)
       | VStruct [(c',v)] -> eval_psum c p c' v envt
       (* If the given expression is not a sum, don't match *)
       | _ -> None
-      end 
+      end
   (*  { , C -> P } => ...    *)
-  | PProd(_, px)  -> 
-      begin match exp with 
+  | PProd(_, px)  ->
+      begin match exp with
       (* If the given expression is a prod ...*)
       | VStruct ex_li -> eval_pprod px ex_li envt
       (* If the given expression is not a prod, don't match *)
@@ -305,7 +304,7 @@ and eval_pattern patt exp envt =
 
   (* | _ => ... : always matches *)
   | POne -> Some envt
-  
+
   (* | 0 => ... : never matches *)
   | PZero -> None
 
