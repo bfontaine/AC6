@@ -57,6 +57,15 @@ let lookup x = List.assoc x [
  Operator.boolean_not --> TFun(TBool,TBool);   
 ]
 
+exception UndeclaredVariable of value_identifier
+
+let rec lookup_ref x env = 
+    match env with
+    | [] -> None
+    | (x',t)::env' -> 
+        if x = x' 
+            then !t 
+        else lookup_ref x env'
 
 (**
  * Check a program.
@@ -99,12 +108,17 @@ let program p =
      | EVar(v)	    -> 
         if identifier v 
         then lookup v 
-        else failwith "EVar Not implemented"
+        else 
+            begin match (lookup_ref v e) with 
+            | Some t -> t 
+            | None -> raise (UndeclaredVariable v)
+            end
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
      | EProd(_,_)	-> failwith "EProd Not implemented"
      | EAnnot(_,_)	-> failwith "EAnnot Not implemented"
      | ESeq(_)	    -> failwith "ESeq Not implemented" 
-     | EDef(_,_)    -> failwith "EDef Not implemented"
+     | EDef(v,exp2)    ->
+        check_expr exp2 (check_vdef v e)
      | EApp(_,_)    -> failwith "EApp Not implemented"
      | ECase(_,_)	-> failwith "ECase Not implemented"
      | EFun(_,_)    -> failwith "EFun Not implemented" 
