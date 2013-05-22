@@ -31,6 +31,34 @@ let declare x env =
   | Unnamed -> env
   | Named x -> (x, ref None) :: env
 
+let identifier p = 
+  let p = AST.EVar p in
+  is_binop p || is_unop p
+
+let ( --> ) x y = 
+  match x with 
+  | AST.EVar x -> (x, y)
+  | _ -> assert false
+ 
+let lookup x = List.assoc x [
+  minus       --> TFun(TInt,TFun(TInt,TInt));
+  plus        --> TFun(TInt,TFun(TInt,TInt)); 
+  star        --> TFun(TInt,TFun(TInt,TInt)); 
+  slash       --> TFun(TInt,TFun(TInt,TInt));     
+  percent     --> TFun(TInt,TFun(TInt,TInt)); 
+  eq          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
+  bangeq      --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
+  andand      --> TFun(TBool,TFun(TBool,TBool)); 
+  pipepipe    --> TFun(TBool,TFun(TBool,TBool)); 
+  le          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+  ge          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+  lt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+  gt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
+  negate      --> TFun(TInt,TInt); 
+  boolean_not --> TFun(TBool,TBool);   
+]
+
+
 (**
  * Check a program.
  *
@@ -69,7 +97,10 @@ let program p =
      | EInt(_)	    -> TInt
      | EChar(_)     -> TChar
      | EString(_)   -> TString
-     | EVar(v)	    -> failwith "EVar Not implemented"
+     | EVar(v)	    -> 
+        if identifier v 
+        then lookup v 
+        else failwith "EVar Not implemented"
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
      | EProd(_,_)	-> failwith "EProd Not implemented"
      | EAnnot(_,_)	-> failwith "EAnnot Not implemented"
