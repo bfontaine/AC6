@@ -142,14 +142,18 @@ and eval_expr exp e = match exp with
       then Primitive.lookup v
       else Env.lookup (Named v) e
 
-  | ESeq(es) -> match es with
-    | [] -> vunit
-    | [ex] ->
-        eval_expr ex e
+  | ESeq(es) ->
+      eval_eseq es e
 
-    | ex::es' ->
-        let _ = eval_expr ex e in
-           eval_expr (ESeq es') e
+(* Evaluate a list of expressions *)
+and eval_eseq es ev = match es with
+  | [] -> vunit
+  | [ex] ->
+      eval_expr ex ev
+
+  | ex::es' ->
+      let _ = eval_expr ex ev in
+         eval_eseq es' ev
 
 (**
  * Evaluate a list of branchs using memoization. If the list have been
