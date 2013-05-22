@@ -133,8 +133,16 @@ let program p =
      
      | ECase(_,_)	-> failwith "ECase Not implemented"
      
-     | EFun(bs,exp)    -> failwith "EFun Not implemented" 
-
+     | EFun(Binding(i,ty),exp)    -> 
+        begin match ty with
+        | None    ->
+            let e' = declare i e in
+            TFun(TAbstrait(compt ()),check_expr exp e')
+        | Some t  ->
+            let ty'' = check_typ t e in
+            let e' = bind i ty'' e in
+            TFun(ty'', check_expr exp e')
+        end
   and check_simple i ty ex e =
     let ty'= check_expr ex e in
     begin match ty with 
