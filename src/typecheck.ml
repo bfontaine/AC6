@@ -60,6 +60,7 @@ let lookup x = List.assoc x [
 exception UndeclaredVariable of value_identifier
 exception SimpleErrorTyping
 exception EAnnotErrorTypping
+exception EAppErrorTyping
 
 let rec lookup_ref x env = 
     match env with
@@ -115,10 +116,7 @@ let program p =
             | Some t -> t 
             | None -> raise (UndeclaredVariable v)
             end
-     | ESum(_,_,_)	-> failwith "ESum Not implemented"
-     
-     | EProd(_,_)	-> failwith "EProd Not implemented"
-     
+    
      | EAnnot(ex,ty)	->
         let t_ty = check_typ ty e in
         let t_ex = check_expr ex e in
@@ -129,9 +127,6 @@ let program p =
      
      | EDef(v,exp2)    ->
         check_expr exp2 (check_vdef v e)
-     | EApp(_,_)    -> failwith "EApp Not implemented"
-     
-     | ECase(_,_)	-> failwith "ECase Not implemented"
      
      | EFun(Binding(i,ty),exp)    -> 
         begin match ty with
@@ -143,6 +138,22 @@ let program p =
             let e' = bind i ty'' e in
             TFun(ty'', check_expr exp e')
         end
+     | EApp(f,e1)    -> 
+        let t_f = check_expr f e in
+        begin match t_f with
+        | TFun(t_1,t )  -> 
+            let t_e1 = check_expr e1 e in
+            if t_1 = t_e1 then t
+            else raise EAppErrorTyping
+        | _     -> failwith "EApp Not implemented"
+        end
+     
+     | ECase(_,_)	-> failwith "ECase Not implemented"
+
+     | ESum(_,_,_)	-> failwith "ESum Not implemented"
+     
+     | EProd(_,_)	-> failwith "EProd Not implemented"
+ 
   and check_simple i ty ex e =
     let ty'= check_expr ex e in
     begin match ty with 
