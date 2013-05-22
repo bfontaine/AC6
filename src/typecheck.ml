@@ -116,12 +116,23 @@ let program p =
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
      | EProd(_,_)	-> failwith "EProd Not implemented"
      | EAnnot(_,_)	-> failwith "EAnnot Not implemented"
-     | ESeq(_)	    -> failwith "ESeq Not implemented" 
+     | ESeq(es)     -> check_eseq es e
      | EDef(v,exp2)    ->
         check_expr exp2 (check_vdef v e)
      | EApp(_,_)    -> failwith "EApp Not implemented"
      | ECase(_,_)	-> failwith "ECase Not implemented"
      | EFun(_,_)    -> failwith "EFun Not implemented" 
+
+  and check_eseq es e =
+      match es with
+        | [] -> TUnit
+        | [ex] ->
+          check_expr ex e
+        | ex::es' ->
+          let _ = check_expr ex e in
+             check_eseq es' e
+
+
 
   in 
   if !flag then 
