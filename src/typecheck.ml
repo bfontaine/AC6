@@ -11,10 +11,15 @@ type value_type =
     | TBool 
     | TCustom  of value_type
     | TFun of value_type * value_type
+    | TAbstrait of int
 
 type env = (value_identifier * value_type option ref)list
 
 let empty () = []
+
+let compteur = ref 0
+
+let compt () = incr compteur ; !compteur
 
 let bind x v env = 
     match x with 
@@ -64,7 +69,7 @@ let program p =
      | EInt(_)	    -> TInt
      | EChar(_)     -> TChar
      | EString(_)   -> TString
-     | EVar(_)	    -> failwith "EVar Not implemented"
+     | EVar(v)	    -> failwith "EVar Not implemented"
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
      | EProd(_,_)	-> failwith "EProd Not implemented"
      | EAnnot(_,_)	-> failwith "EAnnot Not implemented"
