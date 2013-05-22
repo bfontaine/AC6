@@ -9,5 +9,6 @@
 _build
 clap
 clap.native
-/clap-galichet-fontaine-*
 .highscore
+/clap-galichet-fontaine-*
+/doc/html
