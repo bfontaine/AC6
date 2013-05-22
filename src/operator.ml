@@ -19,7 +19,10 @@ let binops =
   [ plus; minus; star; slash; percent; eq; coloneq; andand; pipepipe;
     le; ge; lt; gt; bangeq ]
 
-let is_binop x = List.mem x binops 
+let is_binop x =
+  (   x = plus || x = minus   || x = star   || x = slash    || x = percent
+   || x = eq   || x = coloneq || x = andand || x = pipepipe || x = le
+   || x = ge   || x = lt      || x = gt     || x = bangeq )
 
 let print_binop = function
   | EVar (Identifier x) -> x
@@ -31,7 +34,7 @@ let boolean_not = EVar (Identifier "~")
 
 let unops = [ negate; boolean_not ]
 
-let is_unop x = List.mem x unops
+let is_unop x = (x = negate || x = boolean_not)
 
 let print_unop = function
   | EVar (Identifier "--") -> "-"
