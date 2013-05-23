@@ -70,8 +70,8 @@ let lookup x = List.assoc x [
  Operator.ge          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
  Operator.lt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
  Operator.gt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.negate      --> (("bool", -1) ---> ("bool",-1));
- Operator.boolean_not --> (("int" , -1) ---> ("int",-1));
+ Operator.boolean_not --> (("bool", -1) ---> ("bool",-1));
+ Operator.negate      --> (("int" , -1) ---> ("int",-1));
 ]
 
 let rec lookup_ref x env = 
