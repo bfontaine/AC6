@@ -1,0 +1,7 @@
+** int -> int
+def  f (x) = g(x)
+
+** int -> int
+with g (x) = if x < 42 then x else f(x-1)
+
+val z = f ('c')

@@ -1,0 +1,10 @@
+** bool -> bool -> bool
+def  eq (x) (y) = (fx(x) = fy(y))
+
+** bool -> bool
+with fx (x) = (x = fy(x))
+
+** bool -> bool
+with fy (y) = (~y)
+
+val z = (eq (True))(42)
