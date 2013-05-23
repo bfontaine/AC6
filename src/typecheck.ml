@@ -2,19 +2,18 @@ open AST
 
 let flag = ref false
 
-type value_type = 
-    | TUnit 
-    | TInt 
-    | TChar 
-    | TString 
-    | TBool 
-    | TCustom  of value_type
-    | TFun of value_type * value_type
-    | TAbstrait of int
-
-type env = (value_identifier * value_type option ref)list
+type env = (value_identifier * AST.typ option ref)list
 
 let empty () = []
+
+let sign = Hashtbl.create 42
+
+let add_op_defauld () =
+    Hashtbl.add sign (TIdentifier("int"))  ();
+    Hashtbl.add sign (TIdentifier("char"))  ();
+    Hashtbl.add sign (TIdentifier("string"))  ();
+    Hashtbl.add sign (TIdentifier("bool"))  ();
+    Hashtbl.add sign (TIdentifier("U"))  ()
 
 let compteur = ref 0
 
@@ -38,23 +37,27 @@ let ( --> ) x y =
   match x with 
   | AST.EVar x -> (x, y)
   | _ -> assert false
+
+let (--->) x y = TArrow(TVar(TIdentifier(x),[]),TVar(TIdentifier(y),[]))
+let (&-->) x y = TArrow(TVar(TIdentifier(x),[]),y)
+let typage x = TVar(TIdentifier(x),[])
  
 let lookup x = List.assoc x [
- Operator.minus       --> TFun(TInt,TFun(TInt,TInt));
- Operator.plus        --> TFun(TInt,TFun(TInt,TInt)); 
- Operator.star        --> TFun(TInt,TFun(TInt,TInt)); 
- Operator.slash       --> TFun(TInt,TFun(TInt,TInt));     
- Operator.percent     --> TFun(TInt,TFun(TInt,TInt)); 
- Operator.eq          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
- Operator.bangeq      --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool)); 
- Operator.andand      --> TFun(TBool,TFun(TBool,TBool)); 
- Operator.pipepipe    --> TFun(TBool,TFun(TBool,TBool)); 
- Operator.le          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
- Operator.ge          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
- Operator.lt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
- Operator.gt          --> TFun(TAbstrait(0),TFun(TAbstrait(0),TBool));
- Operator.negate      --> TFun(TInt,TInt); 
- Operator.boolean_not --> TFun(TBool,TBool);   
+ Operator.minus       --> ("int"&-->("int" --->"int"));
+ Operator.plus        --> ("int"&-->("int" --->"int"));
+ Operator.star        --> ("int"&-->("int" --->"int"));
+ Operator.slash       --> ("int"&-->("int" --->"int"));
+ Operator.percent     --> ("int"&-->("int" --->"int"));
+ Operator.eq          --> ("alpha0"&-->("alpha0" --->"bool"));
+ Operator.bangeq      --> ("alpha0"&-->("alpha0" --->"bool"));
+ Operator.andand      --> ("bool"&-->("bool" --->"bool"));
+ Operator.pipepipe    --> ("bool"&-->("bool" --->"bool"));
+ Operator.le          --> ("alpha0"&-->("alpha0" --->"bool"));
+ Operator.ge          --> ("alpha0"&-->("alpha0" --->"bool"));
+ Operator.lt          --> ("alpha0"&-->("alpha0" --->"bool"));
+ Operator.gt          --> ("alpha0"&-->("alpha0" --->"bool"));
+ Operator.negate      --> ("bool" --->"bool");
+ Operator.boolean_not --> ("int" --->"int");
 ]
 
 exception UndeclaredVariable of value_identifier
@@ -105,9 +108,9 @@ let program p =
 
   and check_expr exp e =
 	 match exp with
-     | EInt(_)	    -> TInt
-     | EChar(_)     -> TChar
-     | EString(_)   -> TString
+     | EInt(_)	    -> typage "int" 
+     | EChar(_)     -> typage "char"
+     | EString(_)   -> typage "string"
      | EVar(v)	    -> 
         if identifier v 
         then lookup v 
@@ -132,19 +135,18 @@ let program p =
         begin match ty with
         | None    ->
             let e' = declare i e in
-            TFun(TAbstrait(compt ()),check_expr exp e')
+            TArrow(typage ("alpha"^(string_of_int( compt ()))),check_expr exp e')
         | Some t  ->
             let ty'' = check_typ t e in
             let e' = bind i ty'' e in
-            TFun(ty'', check_expr exp e')
+            TArrow(ty'', check_expr exp e')
         end
      | EApp(f,e1)    -> 
         let t_f = check_expr f e in
         begin match t_f with
-        | TFun(t_1,t )  -> 
-            let t_e1 = check_expr e1 e in
-            if t_1 = t_e1 then t
-            else raise EAppErrorTyping
+        | TArrow(t_1,t )  -> 
+            if t_1 = (check_expr e1 e) then t
+            else raise EAppErrorTyping 
         | _     -> failwith "EApp Not implemented"
         end
      
@@ -164,7 +166,7 @@ let program p =
     end
   and check_eseq es e =
       match es with
-        | [] -> TUnit
+        | [] -> TVar(TIdentifier"U",[])
         | [ex] ->
           check_expr ex e
         | ex::es' ->
@@ -180,4 +182,4 @@ let program p =
     | TRec(_)       -> failwith "TRec Not implemented" 
   in 
   if !flag then 
-     check p (empty ())
+     (add_op_defauld () ; check p (empty ()) )
