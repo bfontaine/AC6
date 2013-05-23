@@ -5,12 +5,28 @@ type value = Primitive.t Runtime.value
 
 type env = Primitive.t Runtime.venv
 
-(* The hashtable used for the memoization *)
-let memo =
+module WeakValues = Weak.Make(struct
+  type t = value
+  let equal x y = (x = y)
+  let hash = Hashtbl.hash
+end)
+
+(* The hashtable used for memoization, and weak hashtable used for
+   hash-consing *)
+let memo, hc_table =
   if !Memo.flag then
-    Hashtbl.create 42
+    Hashtbl.create 64, WeakValues.create 64
   else
-    Hashtbl.create 0
+    Hashtbl.create 0, WeakValues.create 0
+
+(* Hashconsing - Wrap every value in this function, e.g.:
+    before : (VInt 42)
+    after  : (hc (VInt 42))  *)
+let hc =
+  if !Memo.flag
+  then WeakValues.merge hc_table
+  else fun v -> v
+
 
 (**
  * Evaluate a program with an environment.
@@ -64,11 +80,11 @@ and eval_vdef v e = match v with
 and eval_expr exp e = match exp with
 
   (* chars *)
-  | EChar(c)   -> VChar(c)
+  | EChar(c)   -> hc (VChar c)
   (* ints *)
-  | EInt(i)    -> VInt(i)
+  | EInt(i)    -> hc (VInt i)
   (* strings *)
-  | EString(s) -> VString(s)
+  | EString(s) -> hc (VString s)
 
   (* Annotation: (expr:type) *)
   | EAnnot(exp2, _) ->
@@ -93,7 +109,7 @@ and eval_expr exp e = match exp with
 
   (* case { patt => expr | ... }  (and if/then/else) *)
   | ECase(_, branchs) ->
-      VClosure(e, branchs)
+      hc (VClosure(e, branchs))
 
   (* definition *)
   | EDef(v, exp2) ->
@@ -105,7 +121,7 @@ and eval_expr exp e = match exp with
       | Named a -> (PVar a)
       | Unnamed -> POne
       in
-      VClosure(e, [ Branch(arg', exp2) ])
+      hc (VClosure(e, [ Branch(arg', exp2) ]))
 
   (* product constructors *)
   | EProd(_, cl) ->
@@ -116,13 +132,13 @@ and eval_expr exp e = match exp with
         end in
           (c', ex')
       in
-        VStruct(List.map eval_constr cl)
+        hc (VStruct(List.map eval_constr cl))
 
   (* sum contructors *)
   | ESum(c, _, e1) -> let e2 = begin match e1 with
     | Some e1' -> Some (eval_expr e1' e)
     | None     -> None
-  end in VStruct([(c, e2)])
+  end in hc (VStruct([(c, e2)]))
 
   | EVar(v) ->
       (try
