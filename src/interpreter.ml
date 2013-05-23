@@ -97,11 +97,9 @@ and eval_expr exp e = match exp with
           Primitive.apply p (eval_expr e1 e)
 
       | VClosure(ev, branchs) ->
-          (* choose between eval_branchs and eval_memo_vclosure,
+          (* choose between eval_branchs and eval_memo_branchs,
              depending of the memoization flag. *)
-          (if !Memo.flag
-          then eval_memo_vclosure
-          else eval_branchs) ev branchs (eval_expr e1 e)
+          eval_memo_branchs ev branchs (eval_expr e1 e)
 
       | _ ->
           raise Primitive.InvalidPrimitiveCall
@@ -167,21 +165,24 @@ and eval_eseq es ev =
  * @expr the expression on which the function is called
  * @ev the current environment
  **)
-and eval_memo_vclosure ev branchs expr =
-  (*
-    Using
-      try find with Not_found -> compute and memorize
-    seems to be faster than
-      if mem then find else      compute and memorize
+and eval_memo_branchs ev branchs exp =
+  if !Memo.flag then (
+    (*
+      Using
+        try find with Not_found -> compute and memorize
+      seems to be faster than
+        if mem then find else      compute and memorize
 
-    see: http://stackoverflow.com/a/12161946/735926
-   *)
-  try
-      Hashtbl.find memo branchs
-  with Not_found ->
-    let result = eval_branchs ev branchs expr in
-      Hashtbl.add memo branchs result;
-      result
+      see: http://stackoverflow.com/a/12161946/735926
+     *)
+    try
+        Hashtbl.find memo branchs
+    with Not_found ->
+      let result = eval_branchs ev branchs exp in
+        Hashtbl.add memo branchs result;
+        result)
+  else
+    eval_branchs ev branchs exp
 
 (* evaluate a list of branchs, given an expression *)
 and eval_branchs ev branchs exp =
