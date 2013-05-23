@@ -1,0 +1,6 @@
+** int -> bool
+def  f (x) = (g(x) = 42)
+** int -> int
+with g (x) = (x + 1)
+
+val _ = f ("42")
