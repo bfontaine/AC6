@@ -21,21 +21,21 @@ let int_int_int f x y =
   | VInt x, VInt y -> VInt (f x y)
   | _ -> raise InvalidPrimitiveCall
 
-let ctrue = CIdentifier "True"
-
+let ctrue  = CIdentifier "True"
 let cfalse = CIdentifier "False"
 
+let vtrue  = VStruct [ (ctrue, None) ]
+let vfalse = VStruct [ (cfalse, None) ]
+
 let as_bool = function
-  | VStruct [ (k, None) ] when k = ctrue ->
-    true
-  | VStruct [ (k, None) ] when k = cfalse ->
-    false
-  | v -> 
+  | v when v = vtrue  -> true
+  | v when v = vfalse -> false
+  | _ ->
     raise InvalidPrimitiveCall
 
 let of_bool = function
-  | true  -> VStruct [ (ctrue, None) ]
-  | false -> VStruct [ (cfalse, None) ]
+  | true  -> vtrue
+  | false -> vfalse
 
 let bool_bool_bool f x y = 
   of_bool (f (as_bool x) (as_bool y))
@@ -72,7 +72,7 @@ let rec generic_equality v1 v2 =
   | VStruct s1, VStruct s2 ->
     of_bool 
       (List.for_all2 
-	 (fun (k1, v1) (k2, v2) -> k1 = k2 && generic_equality' v1 v2) 
+	 (fun (k1, v1) (k2, v2) -> k1 = k2 && generic_equality' v1 v2)
 	 (canonicalize s1) 
 	 (canonicalize s2))
   | VPrimitive (PRef r), v | v, VPrimitive (PRef r) -> 
