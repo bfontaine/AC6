@@ -172,12 +172,12 @@ let program p =
  
   and check_simple i ty ex e =
     let ty'= check_expr ex e None in
-    begin match ty with 
+    match ty with 
      | None   -> bind i ty' e
      | Some p -> let ty'' = check_typ p e in
         if ty'' = ty' then bind i ty' e
         else raise SimpleErrorTyping
-    end
+
   and check_ESeq es e  pr_ex =
       match es with
         | [] -> tUnit
