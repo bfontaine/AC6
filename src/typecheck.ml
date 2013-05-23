@@ -7,6 +7,8 @@ exception UndeclaredVariable of value_identifier
 exception SimpleErrorTyping
 exception EAnnotErrorTypping
 exception EAppErrorTyping
+exception EVarErrorTyping
+
 
 
 (** Environment of typing  **)
@@ -60,14 +62,14 @@ let lookup x = List.assoc x [
  Operator.star        --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
  Operator.slash       --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
  Operator.percent     --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.eq          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
- Operator.bangeq      --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.eq          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.bangeq      --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
  Operator.andand      --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
  Operator.pipepipe    --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
- Operator.le          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
- Operator.ge          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
- Operator.lt          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
- Operator.gt          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.le          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.ge          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.lt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.gt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
  Operator.negate      --> (("bool", -1) ---> ("bool",-1));
  Operator.boolean_not --> (("int" , -1) ---> ("int",-1));
 ]
@@ -119,7 +121,7 @@ let program p =
     | Simple(Binding(i, ty), ex) -> check_simple i ty ex e 
     | MutuallyRecursive(l) -> failwith "MutuallyRecursive Not implemented"
 
-  and check_expr exp e =
+  and check_expr exp e pr_ex =
 	 match exp with
      | EInt(_)	    -> iNT 
      | EChar(_)     -> cHAR
@@ -128,25 +130,33 @@ let program p =
         if identifier v 
         then lookup v 
         else 
-            begin match (lookup_ref v e) with 
-            | Some t -> t 
-            | None -> raise (UndeclaredVariable v)
+            begin match ((lookup_ref v e),pr_ex) with 
+            | (Some t,Some pr_t) -> 
+                begin match (t,pr_t) with
+                | (TVar(TIdentifier("_alpha_",nb),_) ,pr_ex) -> pr_ex
+                | ( t ,TVar(TIdentifier("_alpha_",nb),_))   -> t
+                | (t1,t2) -> 
+                    if t1 = t2 then t1
+                    else raise EVarErrorTyping
+                end
+            | (Some t , _ ) -> t
+            | (None,_) -> raise (UndeclaredVariable v)
             end
     
      | EAnnot(ex,ty)	->
         let t_ty = check_typ ty e in
-        let t_ex = check_expr ex e in
+        let t_ex = check_expr ex e (Some t_ty) in
         if t_ty = t_ex then t_ty
         else raise EAnnotErrorTypping
             
-     | ESeq(es)     -> check_ESeq es e
+     | ESeq(es)     -> check_ESeq es e pr_ex 
      
      | EDef(v,exp2)    ->
-        check_expr exp2 (check_vdef v e)
+        check_expr exp2 (check_vdef v e) pr_ex
      
-     | EFun(Binding(i,ty),exp)    -> check_EFun i ty exp e
+     | EFun(Binding(i,ty),exp)    -> check_EFun i ty exp e pr_ex
 
-     | EApp(f,e1)   -> check_EApp f e1 e 
+     | EApp(f,e1)   -> check_EApp f e1 e pr_ex
     
      | ECase(_,_)	-> failwith "ECase Not implemented"
 
@@ -155,30 +165,34 @@ let program p =
      | EProd(_,_)	-> failwith "EProd Not implemented"
  
   and check_simple i ty ex e =
-    let ty'= check_expr ex e in
+    let ty'= check_expr ex e None in
     begin match ty with 
      | None   -> bind i ty' e
      | Some p -> let ty'' = check_typ p e in
         if ty'' = ty' then bind i ty' e
         else raise SimpleErrorTyping
     end
-  and check_ESeq es e =
+  and check_ESeq es e  pr_ex =
       match es with
         | [] -> tUnit
         | [ex] ->
-          check_expr ex e
+          check_expr ex e pr_ex
         | ex::es' ->
-          let _ = check_expr ex e in
-             check_ESeq es' e
+          let _ = check_expr ex e pr_ex in
+             check_ESeq es' e pr_ex
 
-  and check_EApp f e1 e =
-       let t_f = check_expr f e in
+  and check_EApp f e1 e pr_ex =
+       let t_f = check_expr f e pr_ex in
         begin match t_f with
         | TArrow(t_1,t )  -> 
-            let t_ex = check_expr e1 e in
+            let t_ex = check_expr e1 e (Some t_1) in
             begin match (t_1,t_ex) with
-            | (_,iNT) -> t 
-            | (iNT,_) -> t
+            | (TVar(TIdentifier("_alpha_",nb),_),t1) -> 
+                if nb >= 0 then t 
+                else raise EAppErrorTyping 
+            | (t1,TVar(TIdentifier("_alpha_",nb),_)) -> 
+                if nb >= 0 then t
+                else raise EAppErrorTyping 
             | (t1,t2) ->
                 if t1 = t2 then t
                 else raise EAppErrorTyping 
@@ -186,16 +200,16 @@ let program p =
         | _     -> failwith "EApp Not implemented"
         end
 
-  and check_EFun i ty exp e =
+  and check_EFun i ty exp e pr_ex =
     match ty with
     | None    ->
-        let ty'' = typage "_alpha"  (compt ()) in
+        let ty'' = typage "_alpha_"  (compt ()) in
         let e' = bind i ty'' e in
-        TArrow( ty'',check_expr exp e')
+        TArrow( ty'',check_expr exp e' pr_ex)
     | Some t  ->
         let ty'' = check_typ t e in
         let e' = bind i ty'' e in
-        TArrow(ty'', check_expr exp e')
+        TArrow(ty'', check_expr exp e' pr_ex )
 
   and check_typ ty e =
     match ty with 
