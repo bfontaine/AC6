@@ -138,9 +138,10 @@ and eval_expr exp e = match exp with
   end in VStruct([(c, e2)])
 
   | EVar(v) ->
-      if Primitive.identifier v
-      then Primitive.lookup v
-      else Env.lookup (Named v) e
+      (try
+        Primitive.lookup v
+      with Not_found ->
+        Env.lookup (Named v) e)
 
   | ESeq(es) ->
       eval_eseq es e
