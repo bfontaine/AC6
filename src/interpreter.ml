@@ -187,6 +187,7 @@ and eval_memo_vclosure ev branchs expr =
 (* evaluate a list of branchs, given an expression *)
 and eval_branchs ev branchs exp =
   match branchs with
+  (* TODO raise No_match and 'catch' it in the REPL *)
   | [] -> failwith "This pattern matching didn't match!"
   | Branch(p, exp')::branchs' ->
       begin match (eval_branch p exp' exp ev) with
@@ -259,6 +260,7 @@ and eval_psum constr patt ex_c ex_v envt =
  * @param ex_li list of construcor_identifier and value
  * @param envt  the environment
  **)
+(* TODO: try to refactor with List.fold_left2 *)
 and eval_pprod px ex_li envt =
   match (px, ex_li) with
   | ( (c, p)::px' , (c', p')::ex_li' ) ->
