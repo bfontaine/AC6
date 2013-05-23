@@ -187,8 +187,7 @@ and eval_memo_vclosure ev branchs expr =
 (* evaluate a list of branchs, given an expression *)
 and eval_branchs ev branchs exp =
   match branchs with
-  (* TODO raise No_match and 'catch' it in the REPL *)
-  | [] -> failwith "This pattern matching didn't match!"
+  | [] -> raise No_match
   | Branch(p, exp')::branchs' ->
       begin match (eval_branch p exp' exp ev) with
       (* if this branch matches, return the new environment *)

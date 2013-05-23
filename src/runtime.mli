@@ -1,5 +1,7 @@
 open AST
 
+exception No_match (* raised when a pattern-matching doesn't match *)
+
 module Env : sig
 
   (* The type of environment associating a value of type ['a]

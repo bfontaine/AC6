@@ -106,6 +106,10 @@ let asts =
       | Runtime.Env.CannotDefineAnonymous ->
           print_string "Error: Cannot define anonymous.\n";
           eval_loop ev
+
+      | Runtime.No_match ->
+          print_string "Error: The pattern didn't match.\n";
+          eval_loop ev
       
       | Primitive.InvalidPrimitiveCall ->
           print_string "Error: Invalid primitive call.\n";
