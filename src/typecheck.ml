@@ -81,6 +81,13 @@ let rec lookup_ref x env =
             then !t 
         else lookup_ref x env'
 
+let rec define_ref x t env =
+    match env with
+    | [] -> ()
+    | (x',t')::env' ->
+        if x' = x then t' := t 
+        else define_ref x t env'
+
 let iNT = TVar(TIdentifier("int",-1),[])
 let cHAR = TVar(TIdentifier("char",-1),[])
 let sTR = TVar(TIdentifier("string",-1),[])
@@ -132,8 +139,8 @@ let program p =
             begin match ((lookup_ref v e),pr_ex) with 
             | (Some t,Some pr_t) -> 
                 begin match (t,pr_t) with
-                | (TVar(TIdentifier("_alpha_",nb),_) ,pr_ex) -> pr_ex
-                | ( t ,TVar(TIdentifier("_alpha_",nb),_))   -> t
+                | (TVar(TIdentifier("_alpha_",nb),_) ,pr_t) when (nb >= 0)-> pr_t
+                | ( t ,TVar(TIdentifier("_alpha_",nb),_))  when (nb >= 0)  -> t
                 | (t1,t2) -> 
                     if t1 = t2 then t1
                     else raise EVarErrorTyping
