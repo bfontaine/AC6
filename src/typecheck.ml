@@ -2,10 +2,17 @@ open AST
 
 let flag = ref false
 
+(** Exception of check typing **)
+exception UndeclaredVariable of value_identifier
+exception SimpleErrorTyping
+exception EAnnotErrorTypping
+exception EAppErrorTyping
+
+
+(** Environment of typing  **)
 type env = (value_identifier * AST.typ option ref)list
 
-let empty () = []
-
+(** Signature of typping**)
 let sign = Hashtbl.create 42
 
 let add_op_defauld () =
@@ -15,9 +22,14 @@ let add_op_defauld () =
     Hashtbl.add sign (TIdentifier("bool"))  ();
     Hashtbl.add sign (TIdentifier("U"))  ()
 
+
+(** Abstract ariable counter*)
 let compteur = ref 0
 
 let compt () = incr compteur ; !compteur
+
+(** Function on environment**)
+let empty () = []
 
 let bind x v env = 
     match x with 
@@ -59,11 +71,6 @@ let lookup x = List.assoc x [
  Operator.negate      --> ("bool" --->"bool");
  Operator.boolean_not --> ("int" --->"int");
 ]
-
-exception UndeclaredVariable of value_identifier
-exception SimpleErrorTyping
-exception EAnnotErrorTypping
-exception EAppErrorTyping
 
 let rec lookup_ref x env = 
     match env with
