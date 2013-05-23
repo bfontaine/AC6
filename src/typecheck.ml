@@ -80,6 +80,12 @@ let rec lookup_ref x env =
             then !t 
         else lookup_ref x env'
 
+let iNT = TVar(TIdentifier("int"),[])
+let cHAR = TVar(TIdentifier("char"),[])
+let sTR = TVar(TIdentifier("string"),[])
+let bOOL = TVar(TIdentifier("bool"),[])
+let tUnit = TVar(TIdentifier("U"),[])
+
 (**
  * Check a program.
  *
@@ -115,9 +121,9 @@ let program p =
 
   and check_expr exp e =
 	 match exp with
-     | EInt(_)	    -> typage "int" 
-     | EChar(_)     -> typage "char"
-     | EString(_)   -> typage "string"
+     | EInt(_)	    -> iNT 
+     | EChar(_)     -> cHAR
+     | EString(_)   -> sTR
      | EVar(v)	    -> 
         if identifier v 
         then lookup v 
@@ -133,30 +139,15 @@ let program p =
         if t_ty = t_ex then t_ty
         else raise EAnnotErrorTypping
             
-     | ESeq(es)     -> check_eseq es e
+     | ESeq(es)     -> check_ESeq es e
      
      | EDef(v,exp2)    ->
         check_expr exp2 (check_vdef v e)
      
-     | EFun(Binding(i,ty),exp)    -> 
-        begin match ty with
-        | None    ->
-            let e' = declare i e in
-            TArrow(typage ("alpha"^(string_of_int( compt ()))),check_expr exp e')
-        | Some t  ->
-            let ty'' = check_typ t e in
-            let e' = bind i ty'' e in
-            TArrow(ty'', check_expr exp e')
-        end
-     | EApp(f,e1)    -> 
-        let t_f = check_expr f e in
-        begin match t_f with
-        | TArrow(t_1,t )  -> 
-            if t_1 = (check_expr e1 e) then t
-            else raise EAppErrorTyping 
-        | _     -> failwith "EApp Not implemented"
-        end
-     
+     | EFun(Binding(i,ty),exp)    -> check_EFun i ty exp e
+
+     | EApp(f,e1)   -> check_EApp f e1 e 
+    
      | ECase(_,_)	-> failwith "ECase Not implemented"
 
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
@@ -171,14 +162,40 @@ let program p =
         if ty'' = ty' then bind i ty' e
         else raise SimpleErrorTyping
     end
-  and check_eseq es e =
+  and check_ESeq es e =
       match es with
         | [] -> TVar(TIdentifier"U",[])
         | [ex] ->
           check_expr ex e
         | ex::es' ->
           let _ = check_expr ex e in
-             check_eseq es' e
+             check_ESeq es' e
+
+  and check_EApp f e1 e =
+       let t_f = check_expr f e in
+        begin match t_f with
+        | TArrow(t_1,t )  -> 
+            let t_ex = check_expr e1 e in
+            begin match (t_1,t_ex) with
+            | (_,iNT) -> t 
+            | (iNT,_) -> t
+            | (t1,t2) ->
+                if t1 = t2 then t
+                else raise EAppErrorTyping 
+            end
+        | _     -> failwith "EApp Not implemented"
+        end
+
+  and check_EFun i ty exp e =
+    match ty with
+    | None    ->
+        let ty'' = typage ("alpha"^(string_of_int( compt ()))) in
+        let e' = bind i ty'' e in
+        TArrow( ty'',check_expr exp e')
+    | Some t  ->
+        let ty'' = check_typ t e in
+        let e' = bind i ty'' e in
+        TArrow(ty'', check_expr exp e')
 
   and check_typ ty e =
     match ty with 
