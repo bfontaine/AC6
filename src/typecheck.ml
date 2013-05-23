@@ -16,11 +16,11 @@ type env = (value_identifier * AST.typ option ref)list
 let sign = Hashtbl.create 42
 
 let add_op_defauld () =
-    Hashtbl.add sign (TIdentifier("int"))  ();
-    Hashtbl.add sign (TIdentifier("char"))  ();
-    Hashtbl.add sign (TIdentifier("string"))  ();
-    Hashtbl.add sign (TIdentifier("bool"))  ();
-    Hashtbl.add sign (TIdentifier("U"))  ()
+    Hashtbl.add sign (TIdentifier("int",-1))  ();
+    Hashtbl.add sign (TIdentifier("char",-1))  ();
+    Hashtbl.add sign (TIdentifier("string",-1))  ();
+    Hashtbl.add sign (TIdentifier("bool",-1))  ();
+    Hashtbl.add sign (TIdentifier("U",-1))  ()
 
 
 (** Abstract ariable counter*)
@@ -50,26 +50,26 @@ let ( --> ) x y =
   | AST.EVar x -> (x, y)
   | _ -> assert false
 
-let (--->) x y = TArrow(TVar(TIdentifier(x),[]),TVar(TIdentifier(y),[]))
-let (&-->) x y = TArrow(TVar(TIdentifier(x),[]),y)
-let typage x = TVar(TIdentifier(x),[])
+let typage x y = TVar(TIdentifier(x,y), [])
+let (--->) (x,z) (y,w) = TArrow( typage x z ,typage y w )
+let (&-->) (x,z) y = TArrow(typage x z ,y )
  
 let lookup x = List.assoc x [
- Operator.minus       --> ("int"&-->("int" --->"int"));
- Operator.plus        --> ("int"&-->("int" --->"int"));
- Operator.star        --> ("int"&-->("int" --->"int"));
- Operator.slash       --> ("int"&-->("int" --->"int"));
- Operator.percent     --> ("int"&-->("int" --->"int"));
- Operator.eq          --> ("alpha0"&-->("alpha0" --->"bool"));
- Operator.bangeq      --> ("alpha0"&-->("alpha0" --->"bool"));
- Operator.andand      --> ("bool"&-->("bool" --->"bool"));
- Operator.pipepipe    --> ("bool"&-->("bool" --->"bool"));
- Operator.le          --> ("alpha0"&-->("alpha0" --->"bool"));
- Operator.ge          --> ("alpha0"&-->("alpha0" --->"bool"));
- Operator.lt          --> ("alpha0"&-->("alpha0" --->"bool"));
- Operator.gt          --> ("alpha0"&-->("alpha0" --->"bool"));
- Operator.negate      --> ("bool" --->"bool");
- Operator.boolean_not --> ("int" --->"int");
+ Operator.minus       --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
+ Operator.plus        --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
+ Operator.star        --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
+ Operator.slash       --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
+ Operator.percent     --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
+ Operator.eq          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.bangeq      --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.andand      --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
+ Operator.pipepipe    --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
+ Operator.le          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.ge          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.lt          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.gt          --> (("alpha",0)  &--> (("alpha",0) ---> ("bool",-1)));
+ Operator.negate      --> (("bool", -1) ---> ("bool",-1));
+ Operator.boolean_not --> (("int" , -1) ---> ("int",-1));
 ]
 
 let rec lookup_ref x env = 
@@ -80,11 +80,11 @@ let rec lookup_ref x env =
             then !t 
         else lookup_ref x env'
 
-let iNT = TVar(TIdentifier("int"),[])
-let cHAR = TVar(TIdentifier("char"),[])
-let sTR = TVar(TIdentifier("string"),[])
-let bOOL = TVar(TIdentifier("bool"),[])
-let tUnit = TVar(TIdentifier("U"),[])
+let iNT = TVar(TIdentifier("int",-1),[])
+let cHAR = TVar(TIdentifier("char",-1),[])
+let sTR = TVar(TIdentifier("string",-1),[])
+let bOOL = TVar(TIdentifier("bool",-1),[])
+let tUnit = TVar(TIdentifier("U",-1),[])
 
 (**
  * Check a program.
@@ -164,7 +164,7 @@ let program p =
     end
   and check_ESeq es e =
       match es with
-        | [] -> TVar(TIdentifier"U",[])
+        | [] -> tUnit
         | [ex] ->
           check_expr ex e
         | ex::es' ->
@@ -189,7 +189,7 @@ let program p =
   and check_EFun i ty exp e =
     match ty with
     | None    ->
-        let ty'' = typage ("alpha"^(string_of_int( compt ()))) in
+        let ty'' = typage "_alpha"  (compt ()) in
         let e' = bind i ty'' e in
         TArrow( ty'',check_expr exp e')
     | Some t  ->
