@@ -260,16 +260,17 @@ and eval_psum constr patt ex_c ex_v envt =
  * @param ex_li list of construcor_identifier and value
  * @param envt  the environment
  **)
-(* TODO: try to refactor with List.fold_left2 *)
 and eval_pprod px ex_li envt =
-  match (px, ex_li) with
-  | ( (c, p)::px' , (c', p')::ex_li' ) ->
-      begin match eval_psum c p c' p' envt with
-      | Some envt' -> eval_pprod px' ex_li' envt'
-      | None -> None
-      end
-  |([],[]) -> Some envt
-  |(_,_)   -> None
+  try
+    Some (List.fold_left2 (
+      fun ev (c1, p1) (c2, p2) ->
+        match eval_psum c1 p1 c2 p2 ev with
+        | Some e -> e
+        | _ -> raise Exit
+    ) envt px ex_li)
+  with
+    Invalid_argument _ -> None
+  | Exit -> None
 
 
 and eval_pattern patt exp envt =
