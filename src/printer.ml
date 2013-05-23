@@ -75,7 +75,7 @@ and type_arguments = function
   | [] -> empty
   | ts -> break1 ^^ sparen (sepmap (comma ^^ break1) typ ts)
  
-and type_identifier (TIdentifier x) = text x
+and type_identifier (TIdentifier (x,_)) = text x
 
 and constructor_identifier (CIdentifier x) = text x
 

@@ -78,6 +78,6 @@ and value_identifier = Identifier of string
 
 and constructor_identifier = CIdentifier of string
 
-and type_identifier = TIdentifier of string
+and type_identifier = TIdentifier of string * int
 
 and type_identifiers = type_identifier list

@@ -439,7 +439,7 @@ pattern:
 
 type_id:
   (* aTypeId *)
-    t=ID { TIdentifier(t) }
+    t=ID { TIdentifier(t,-1) }
 
 %inline diples_comma_separated_list(X):
   (* [ < X [, X, X, ... ] > ] *)
