@@ -104,7 +104,7 @@ dist:
 check: all
 	$(MAKE) -C tests check
 
-remote-check: dist sign
+submit: dist sign
 	 curl -s -F datafile=@$(PACKAGE).tar.gz.sig \
 		 -e "http://www.regis-gianas.com/~clap2013/" \
 		 -A "--> http://bit.ly/i-love-ac6 (like Mozilla)" \
