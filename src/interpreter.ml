@@ -76,24 +76,20 @@ and eval_expr exp e = match exp with
 
   (* Function application: f(x) *)
   | EApp(f, e1) ->
-      let fn = eval_expr f e in
-        begin match fn with
-        | VPrimitive(p) ->
-            Primitive.apply p (eval_expr e1 e)
+      begin match (eval_expr f e) with
+      | VPrimitive(p) ->
+          Primitive.apply p (eval_expr e1 e)
 
-        | VClosure(ev, branchs) ->
-            (* choose between eval_branchs and eval_memo_vclosure,
-               depending of the memoization flag. *)
-            (if !Memo.flag
-            then eval_memo_vclosure
-            else eval_branchs) ev branchs (eval_expr e1 e)
+      | VClosure(ev, branchs) ->
+          (* choose between eval_branchs and eval_memo_vclosure,
+             depending of the memoization flag. *)
+          (if !Memo.flag
+          then eval_memo_vclosure
+          else eval_branchs) ev branchs (eval_expr e1 e)
 
-        | VInt(_)
-        | VChar(_)
-        | VString(_)
-        | VStruct(_) ->
-            raise Primitive.InvalidPrimitiveCall
-        end
+      | _ ->
+          raise Primitive.InvalidPrimitiveCall
+      end
 
   (* case { patt => expr | ... }  (and if/then/else) *)
   | ECase(_, branchs) ->
@@ -124,7 +120,7 @@ and eval_expr exp e = match exp with
 
   (* sum contructors *)
   | ESum(c, _, e1) -> let e2 = begin match e1 with
-    | Some e1' -> (Some (eval_expr e1' e))
+    | Some e1' -> Some (eval_expr e1' e)
     | None     -> None
   end in VStruct([(c, e2)])
 
@@ -138,14 +134,11 @@ and eval_expr exp e = match exp with
       eval_eseq es e
 
 (* Evaluate a list of expressions *)
-and eval_eseq es ev = match es with
-  | [] -> vunit
-  | [ex] ->
-      eval_expr ex ev
-
-  | ex::es' ->
-      let _ = eval_expr ex ev in
-         eval_eseq es' ev
+and eval_eseq es ev =
+  (* We use List.fold_left even if we don't
+     need an accumulator, since we have to iter
+     on the list and then return the last result *)
+  List.fold_left (fun _ ex -> eval_expr ex ev) vunit es
 
 (**
  * Evaluate a list of branchs using memoization. If the list have been
@@ -216,13 +209,14 @@ and eval_branch patt br_exp input_exp envt =
  * @param envt   the environment
  **)
 and eval_psum constr patt ex_c ex_v envt =
-  match patt, (constr = ex_c) with
+  match patt with
   (* sum with sub-pattern *)
-  | Some p, true ->
-      (* ...and if constructor ids match... *)
+  | Some p when constr = ex_c ->
+      (* if constructor ids match... *)
       begin match ex_v with
 
-      (* ...then if the expression is something like A, don't match. *)
+      (* ...then if the expression is something like A (and not A[x]),
+         don't match *)
       | None    -> None
 
       (* ...else if the expression is something like A[x],
@@ -230,10 +224,9 @@ and eval_psum constr patt ex_c ex_v envt =
       | Some v' -> eval_pattern p v' envt
       end
 
-  (* sum without sub-pattern  *)
-  | None, true ->
-    (* ...and the constructor ids match, then the pattern matches *)
-        Some envt
+  (* sum without sub-pattern
+     if the constructor ids match, then the pattern matches *)
+  | None when constr = ex_c -> Some envt
 
   (* if not, it doesn't match. *)
   | _ -> None
