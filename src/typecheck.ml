@@ -8,8 +8,7 @@ exception SimpleErrorTyping
 exception EAnnotErrorTypping
 exception EAppErrorTyping
 exception EVarErrorTyping
-
-
+exception TVarErrorTyping 
 
 (** Environment of typing  **)
 type env = (value_identifier * AST.typ option ref)list
@@ -213,8 +212,10 @@ let program p =
 
   and check_typ ty e =
     match ty with 
-    | TVar(_,_)     -> failwith "TVar Not implemented" 
-    | TArrow(_,_)   -> failwith "TArrow Not implemented" 
+    | TVar(t_i,_) -> 
+        if Hashtbl.mem sign t_i then ty
+        else raise TVarErrorTyping
+    | TArrow(t1,t2)   -> TArrow(check_typ t1 e, check_typ t2 e) 
     | TSum(_)       -> failwith "TSum Not implemented" 
     | TProd(_)      -> failwith "TProd Not implemented" 
     | TRec(_)       -> failwith "TRec Not implemented" 
