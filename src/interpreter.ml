@@ -19,17 +19,13 @@ let memo =
  * @param e the environment
  * @return the new environment
  **)
-let rec eval p e = match p with
-  (* No definitions *)
-  | [] -> e
-  (* One or more definitions *)
-  | d::defs ->
-      (* evaluate the definition, and iter on the
-       * rest of the program *)
-      let e' = begin match d with
-        | DVal(v) -> eval_vdef v e
-        | _ -> e (* DType(_): there's no type here *)
-      end in eval defs e'
+let rec eval p e =
+  List.fold_left (
+    fun e d ->
+      match d with
+      | DVal(v) -> eval_vdef v e
+      | _       -> e
+  ) e p
 
 (**
  * Evaluate some mutually recursive function definitions, and
@@ -48,20 +44,28 @@ and eval_mutually_recursive l e =
     | []     -> e
     | (Binding(i, _), body)::lx ->
         let e2 = Env.declare i e in
+          (* TODO: fill_env_with_empty_defs instead of eval_mutually_recursive? *)
           eval_mutually_recursive lx e2
 
-  (* TODO try with a List.map *)
-  and bind_bodies l e = match l with
-    | [] -> e
+  and bind_bodies l e =
+    List.iter (function
+      | (Binding(Named(_) as i, _), body) -> Env.define i (eval_expr body e) e
+      | _ -> ()
+    ) l
+    
+    (*
+    match l with
+    | [] -> ()
     | (Binding(Named(_) as i, _), body)::lx ->
         Env.define i (eval_expr body e) e;
           bind_bodies lx e
 
     | _::lx -> (* Unnamed *)
-        bind_bodies lx e
+        bind_bodies lx e*)
 
   in
-    bind_bodies l (fill_env_with_empty_defs l e)
+    let e' = (fill_env_with_empty_defs l e) in
+      bind_bodies l e'; e'
 
 (* evaluate a vdefinition within an environment *)
 and eval_vdef v e = match v with
