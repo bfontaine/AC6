@@ -40,32 +40,18 @@ and eval_mutually_recursive l e =
      functions, we make it in two steps:
      - first, declare empty functions in the environment
      - then, define their body *)
-  let rec fill_env_with_empty_defs l e = match l with
-    | []     -> e
-    | (Binding(i, _), body)::lx ->
-        let e2 = Env.declare i e in
-          (* TODO: fill_env_with_empty_defs instead of eval_mutually_recursive? *)
-          eval_mutually_recursive lx e2
-
-  and bind_bodies l e =
-    List.iter (function
-      | (Binding(Named(_) as i, _), body) -> Env.define i (eval_expr body e) e
-      | _ -> ()
-    ) l
-    
-    (*
-    match l with
-    | [] -> ()
-    | (Binding(Named(_) as i, _), body)::lx ->
-        Env.define i (eval_expr body e) e;
-          bind_bodies lx e
-
-    | _::lx -> (* Unnamed *)
-        bind_bodies lx e*)
-
+  let e' = 
+    (* 1- declare empty functions *)
+    List.fold_left
+      (fun e' -> function
+        | (Binding(i, _), _) -> Env.declare i e')
+      e l
   in
-    let e' = (fill_env_with_empty_defs l e) in
-      bind_bodies l e'; e'
+    (* 2- bind their bodies *)
+    List.iter (function
+      | (Binding(Named(_) as i, _), body) -> Env.define i (eval_expr body e') e'
+      | _ -> ()
+    ) l; e'
 
 (* evaluate a vdefinition within an environment *)
 and eval_vdef v e = match v with
