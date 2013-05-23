@@ -50,6 +50,7 @@ and eval_mutually_recursive l e =
         let e2 = Env.declare i e in
           eval_mutually_recursive lx e2
 
+  (* TODO try with a List.map *)
   and bind_bodies l e = match l with
     | [] -> e
     | (Binding(Named(_) as i, _), body)::lx ->
