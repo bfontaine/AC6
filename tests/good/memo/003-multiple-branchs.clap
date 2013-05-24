@@ -1,0 +1,8 @@
+val c = case {
+  | A[x] => x
+  | B[x] => x + 1
+  | C[x] => x + 2
+}
+val xA = c ( A[0] )
+val xB = c ( B[0] )
+val xC = c ( C[0] )
