@@ -33,6 +33,9 @@ module Env : sig
      and their associated values in [e]. *)
   val entries : 'a t -> (value_identifier * 'a) list
 
+  (* [last_entry e] returns the last entry. *)
+  val last_entry : 'a t -> (value_identifier * 'a)
+
   exception DefiningUndeclaredVariable of value_identifier
   exception UndefinedVariable of value_identifier
   exception UndeclaredVariable of value_identifier
@@ -62,6 +65,10 @@ val vunit : 'p value
 
 (* [print v] outputs a value as a document. *)
 val print : 'p value -> Pprint.document
+
+(* [print_env_identifier i v] outputs an environment binding
+   as a document *)
+val print_env_identifier : AST.value_identifier * 'p value -> Pprint.document
 
 (* [print v] outputs an environment as a document. *)
 val print_environment : 'p venv -> Pprint.document

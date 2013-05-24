@@ -23,7 +23,6 @@ let options = Arg.align [
   "--type", Arg.Set Typecheck.flag, 
   " Typecheck before evaluation.";
 
-  (* experimental *)
   "--repl", Arg.Set repl,
   " Use a REPL instead of the provided files."
 ]
@@ -74,46 +73,5 @@ let asts =
   if not !repl
   then
     List.map process_file !filenames
-(* REPL support *)
   else
-    (REPL.print_banner ();
-    let rec eval_loop ev =
-      try
-        let ast =
-          parse_input (Lexing.from_string (REPL.read_entry ())) "(repl)" in
-          let ev = Interpreter.eval ast ev in
-            output (Runtime.print_environment ev);
-            eval_loop ev
-      with
-        End_of_file -> ()
-      
-      | Runtime.Env.UndeclaredVariable (AST.Identifier x) ->
-          print_string ("Error: Undeclared variable '" ^ x ^ "'.\n");
-          eval_loop ev
-
-      | Runtime.Env.UndefinedVariable (AST.Identifier x) ->
-          print_string ("Error: Undefined variable '" ^ x ^ "'.\n");
-          eval_loop ev
-      
-      | Runtime.Env.DefiningUndeclaredVariable (AST.Identifier x) ->
-          print_string ("Error: I can't define '" ^ x ^ "', it's undeclared.\n");
-          eval_loop ev
-      
-      | Runtime.Env.CannotLookupAnonymous ->
-          print_string "Error: Cannot lookup anonymous.\n";
-          eval_loop ev
-      
-      | Runtime.Env.CannotDefineAnonymous ->
-          print_string "Error: Cannot define anonymous.\n";
-          eval_loop ev
-
-      | Runtime.No_match ->
-          print_string "Error: The pattern didn't match.\n";
-          eval_loop ev
-      
-      | Primitive.InvalidPrimitiveCall ->
-          print_string "Error: Invalid primitive call.\n";
-          eval_loop ev
-    in
-      eval_loop (Runtime.Env.empty ()); [])
-(* /REPL support *)
+    (REPL.start parse_input (output) (Runtime.Env.empty ()); [])

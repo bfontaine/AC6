@@ -226,27 +226,26 @@ and eval_branch patt br_exp input_exp envt =
  * @param envt   the environment
  **)
 and eval_psum constr patt ex_c ex_v envt =
-  match patt with
-  (* sum with sub-pattern *)
-  | Some p when constr = ex_c ->
-      (* if constructor ids match... *)
-      begin match ex_v with
+  if constr <> ex_c then None
+  else
+    match patt with
+    (* sum with sub-pattern *)
+    | Some p ->
+        (* if constructor ids match... *)
+        begin match ex_v with
 
-      (* ...then if the expression is something like A (and not A[x]),
-         don't match *)
-      | None    -> None
+        (* ...then if the expression is something like A[x],
+           try to match p with x. *)
+        | Some v' -> eval_pattern p v' envt
 
-      (* ...else if the expression is something like A[x],
-         try to match p with x. *)
-      | Some v' -> eval_pattern p v' envt
-      end
+        (* ...else if the expression is something like A (and not A[x]),
+           don't match *)
+        | _ -> None
+        end
 
-  (* sum without sub-pattern
-     if the constructor ids match, then the pattern matches *)
-  | None when constr = ex_c -> Some envt
-
-  (* if not, it doesn't match. *)
-  | _ -> None
+    (* sum without sub-pattern
+       if the constructor ids match, then the pattern matches *)
+    | _ -> Some envt
 
 (**
  * Evaluate a pattern produit. It returns a value option.

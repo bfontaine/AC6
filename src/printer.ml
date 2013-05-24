@@ -75,7 +75,13 @@ and type_arguments = function
   | [] -> empty
   | ts -> break1 ^^ sparen (sepmap (comma ^^ break1) typ ts)
  
-and type_identifier (TIdentifier (x,_)) = text x
+and type_identifier  = function
+  | TIdentifier (x, i) when i < 0 -> text x
+  (* 'a, 'b, 'c, ... *)
+  | TIdentifier (_, i) when i < 26 -> (char '\'') ^^ (char (Char.chr i))
+  (* 'a1, 'b1, 'c1, ..., 'z1, 'a2, 'b2, ... *)
+  | TIdentifier (_, i) ->
+      (char '\'') ^^ (char (Char.chr (i mod 26))) ^^ (text (string_of_int(i/26)))
 
 and constructor_identifier (CIdentifier x) = text x
 
