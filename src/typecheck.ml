@@ -9,6 +9,7 @@ exception EAnnotErrorTypping
 exception EAppErrorTyping
 exception EVarErrorTyping
 exception TVarErrorTyping 
+exception UnificationError
 
 (** Environment of typing  **)
 type env = (value_identifier * AST.typ option ref)list
@@ -24,8 +25,8 @@ let add_op_defauld () =
     Hashtbl.add sign (TIdentifier("U",-1))  ()
 
 
-(** Abstract ariable counter*)
-let compteur = ref 0
+(** Abstract variable counter*)
+let compteur = ref (-1)
 
 let compt () = incr compteur ; !compteur
 
@@ -61,14 +62,14 @@ let lookup x = List.assoc x [
  Operator.star        --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
  Operator.slash       --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
  Operator.percent     --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.eq          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.bangeq      --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.eq          --> (("_alpha_",compt ())  &--> (("_alpha_",compt ()) ---> ("bool",-1)));
+ Operator.bangeq      --> (("_alpha_",compt ())  &--> (("_alpha_",compt ()) ---> ("bool",-1)));
  Operator.andand      --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
  Operator.pipepipe    --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
- Operator.le          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.ge          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.lt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.gt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.le          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
+ Operator.ge          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
+ Operator.lt          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
+ Operator.gt          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
  Operator.boolean_not --> (("bool", -1) ---> ("bool",-1));
  Operator.negate      --> (("int" , -1) ---> ("int",-1));
 ]
@@ -88,12 +89,30 @@ let rec define_ref x t env =
         if x' = x then t' := t 
         else define_ref x t env'
 
-let iNT = TVar(TIdentifier("int",-1),[])
-let cHAR = TVar(TIdentifier("char",-1),[])
-let sTR = TVar(TIdentifier("string",-1),[])
-let bOOL = TVar(TIdentifier("bool",-1),[])
+let tInt = TVar(TIdentifier("int",-1),[])
+let tChar = TVar(TIdentifier("char",-1),[])
+let tString = TVar(TIdentifier("string",-1),[])
+let tBool = TVar(TIdentifier("bool",-1),[])
 let tUnit = TVar(TIdentifier("U",-1),[])
 
+let type_litteral = [tInt; tChar; tString; tBool; tUnit]
+
+let is_type_lit x = List.mem x type_litteral
+
+(*** Unfication of typing ***)
+module MapUnif = Map.Make(struct
+    type t = int  
+    let compare = compare
+end)
+
+let rec unification ty ty_exp m_cont =
+    match (ty,ty_exp) with
+    |(TVar(tI,_),TVar(tI_ex,_)) -> ty 
+    |(TArrow(_,_),TArrow(_,_))  -> ty
+    |(TSum(_),TSum(_))          -> failwith "Unif TSum Not Implemented"
+    |(TProd(_),TProd(_))        -> failwith "Unif TProd Not Implemented"
+    |(TRec(_,_),TRec(_,_))      -> failwith "Unif TRec Not Implemented"
+    |(_,_)                      -> raise UnificationError
 (**
  * Check a program.
  *
@@ -129,26 +148,10 @@ let program p =
 
   and check_expr exp e pr_ex =
 	 match exp with
-     | EInt(_)	    -> iNT 
-     | EChar(_)     -> cHAR
-     | EString(_)   -> sTR
-     | EVar(v)	    -> 
-        if identifier v 
-        then lookup v 
-        else 
-            begin match ((lookup_ref v e),pr_ex) with 
-            | (Some t,Some pr_t) -> 
-                begin match (t,pr_t) with
-                | (TVar(TIdentifier("_alpha_",nb),_) ,pr_t) when (nb >= 0)-> pr_t
-                | ( t ,TVar(TIdentifier("_alpha_",nb),_))  when (nb >= 0)  -> t
-                | (t1,t2) -> 
-                    if t1 = t2 then t1
-                    else raise EVarErrorTyping
-                end
-            | (Some t , _ ) -> t
-            | (None,_) -> raise (UndeclaredVariable v)
-            end
-    
+     | EInt(_)	    -> tInt 
+     | EChar(_)     -> tChar
+     | EString(_)   -> tString
+     | EVar(v)	    -> check_EVar v e pr_ex
      | EAnnot(ex,ty)	->
         let t_ty = check_typ ty e in
         let t_ex = check_expr ex e (Some t_ty) in
@@ -217,10 +220,28 @@ let program p =
         let e' = bind i ty'' e in
         TArrow(ty'', check_expr exp e' pr_ex )
 
+  and check_EVar v e pr_ex =
+        if identifier v 
+        then lookup v 
+        else 
+            begin match ((lookup_ref v e),pr_ex) with 
+            | (Some t,Some pr_t) -> 
+                begin match (t,pr_t) with
+                | (TVar(TIdentifier("_alpha_",nb),_) ,pr_t) when (nb > 0)-> pr_t
+                | ( t ,TVar(TIdentifier("_alpha_",nb),_))  when (nb > 0)  -> t
+                | (t1,t2) -> 
+                    if t1 = t2 then t1
+                    else raise EVarErrorTyping
+                end
+            | (Some t , _ ) -> t
+            | (None,_) -> raise (UndeclaredVariable v)
+            end
+ 
+
   and check_typ ty e =
     match ty with 
     | TVar(t_i,_) -> 
-        if Hashtbl.mem sign t_i then ty
+        if (Hashtbl.mem sign t_i || is_type_lit ty )then ty
         else raise TVarErrorTyping
     | TArrow(t1,t2)   -> TArrow(check_typ t1 e, check_typ t2 e) 
     | TSum(_)       -> failwith "TSum Not implemented" 
