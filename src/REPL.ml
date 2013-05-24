@@ -26,12 +26,13 @@ let start parse_input output e =
       let ast =
         parse_input (Lexing.from_string (read_entry ())) "(repl)" in
         let ev = Interpreter.eval ast ev in
-          (* FIXME: List.hd on List.rev on List.rev_map is not efficient *)
-          output (Runtime.print_env_identifier (List.hd (Runtime.Env.rev_entries ev)));
+          output (Runtime.print_env_identifier (Runtime.Env.last_entry ev));
           print_newline ();
           eval_loop ev
     with
       End_of_file -> ()
+
+    | Not_found -> eval_loop ev
 
     | Runtime.Env.UndeclaredVariable (AST.Identifier x) ->
         print_string ("Error: Undeclared variable '" ^ x ^ "'.\n");

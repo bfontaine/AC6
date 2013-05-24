@@ -33,8 +33,8 @@ module Env : sig
      and their associated values in [e]. *)
   val entries : 'a t -> (value_identifier * 'a) list
 
-  (* [rev_entries e] is the reverse of [entries e]. *)
-  val rev_entries : 'a t -> (value_identifier * 'a) list
+  (* [last_entry e] returns the last entry. *)
+  val last_entry : 'a t -> (value_identifier * 'a)
 
   exception DefiningUndeclaredVariable of value_identifier
   exception UndefinedVariable of value_identifier
