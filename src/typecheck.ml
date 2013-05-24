@@ -95,23 +95,21 @@ let tString = TVar(TIdentifier("string",-1),[])
 let tBool = TVar(TIdentifier("bool",-1),[])
 let tUnit = TVar(TIdentifier("U",-1),[])
 
-let type_litteral = [tInt; tChar; tString; tBool; tUnit]
-
-let is_type_lit x = List.mem x type_litteral
-
-(*** Unfication of typing ***)
+(*** Unification of typing ***)
 module MapUnif = Map.Make(struct
     type t = int  
     let compare = compare
 end)
 
-let rec unification ty ty_exp m_cont =
-    match (ty,ty_exp) with
-    |(TVar(tI,_),TVar(tI_ex,_)) -> ty 
-    |(TArrow(_,_),TArrow(_,_))  -> ty
-    |(TSum(_),TSum(_))          -> failwith "Unif TSum Not Implemented"
-    |(TProd(_),TProd(_))        -> failwith "Unif TProd Not Implemented"
-    |(TRec(_,_),TRec(_,_))      -> failwith "Unif TRec Not Implemented"
+let rec unification ty ty_exp =
+    match ty, ty_exp with
+    | TVar(tI,_), TVar(tI_ex,_) when tI = tI_ex-> ty 
+    | TVar(tI,_), TVar(TIdentifier(s,nb),_) when nb > 0 -> ty 
+    | _ , TVar(_,_) -> unification ty_exp ty
+    | TArrow(a1,b1), TArrow(a2,b2)  -> TArrow(unification a1 a2, unification b1 b2)
+    | TSum(_), TSum(_)          -> failwith "Unif TSum Not Implemented"
+    | TProd(_), TProd(_)        -> failwith "Unif TProd Not Implemented"
+    | TRec(_,_), TRec(_,_)      -> failwith "Unif TRec Not Implemented"
     |(_,_)                      -> raise UnificationError
 (**
  * Check a program.
@@ -155,9 +153,8 @@ let program p =
      | EAnnot(ex,ty)	->
         let t_ty = check_typ ty e in
         let t_ex = check_expr ex e (Some t_ty) in
-        if t_ty = t_ex then t_ty
-        else raise EAnnotErrorTypping
-            
+        unification t_ty t_ex 
+
      | ESeq(es)     -> check_ESeq es e pr_ex 
      
      | EDef(v,exp2)    ->
@@ -174,12 +171,12 @@ let program p =
      | EProd(_,_)	-> failwith "EProd Not implemented"
  
   and check_simple i ty ex e =
-    let ty'= check_expr ex e None in
+    let ty_ex= check_expr ex e None in
     match ty with 
-     | None   -> bind i ty' e
-     | Some p -> let ty'' = check_typ p e in
-        if ty'' = ty' then bind i ty' e
-        else raise SimpleErrorTyping
+     | None   -> bind i ty_ex e
+     | Some p -> let ty' = check_typ p e in
+        let ty_fi = unification ty' ty_ex in
+        bind i ty_fi e 
 
   and check_ESeq es e  pr_ex =
       match es with
@@ -195,17 +192,7 @@ let program p =
         begin match t_f with
         | TArrow(t_1,t )  -> 
             let t_ex = check_expr e1 e (Some t_1) in
-            begin match (t_1,t_ex) with
-            | (TVar(TIdentifier("_alpha_",nb),_),t1) -> 
-                if nb >= 0 then t 
-                else raise EAppErrorTyping 
-            | (t1,TVar(TIdentifier("_alpha_",nb),_)) -> 
-                if nb >= 0 then t
-                else raise EAppErrorTyping 
-            | (t1,t2) ->
-                if t1 = t2 then t
-                else raise EAppErrorTyping 
-            end
+            unification t_1 t_ex
         | _     -> failwith "EApp Not implemented"
         end
 
@@ -241,7 +228,7 @@ let program p =
   and check_typ ty e =
     match ty with 
     | TVar(t_i,_) -> 
-        if (Hashtbl.mem sign t_i || is_type_lit ty )then ty
+        if Hashtbl.mem sign t_i then ty
         else raise TVarErrorTyping
     | TArrow(t1,t2)   -> TArrow(check_typ t1 e, check_typ t2 e) 
     | TSum(_)       -> failwith "TSum Not implemented" 
