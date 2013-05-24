@@ -5,10 +5,12 @@ let flag = ref false
 (** Exception of check typing **)
 exception UndeclaredVariable of value_identifier
 exception SimpleErrorTyping
-exception EAnnotErrorTypping
+exception EFunErrorTyping
+exception EAnnotErrorTyping
 exception EAppErrorTyping
 exception EVarErrorTyping
 exception TVarErrorTyping 
+exception UnificationError
 
 (** Environment of typing  **)
 type env = (value_identifier * AST.typ option ref)list
@@ -24,8 +26,8 @@ let add_op_defauld () =
     Hashtbl.add sign (TIdentifier("U",-1))  ()
 
 
-(** Abstract ariable counter*)
-let compteur = ref 0
+(** Abstract variable counter*)
+let compteur = ref (-1)
 
 let compt () = incr compteur ; !compteur
 
@@ -61,14 +63,14 @@ let lookup x = List.assoc x [
  Operator.star        --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
  Operator.slash       --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
  Operator.percent     --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.eq          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.bangeq      --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.eq          --> (("_alpha_",compt ())  &--> (("_alpha_",compt ()) ---> ("bool",-1)));
+ Operator.bangeq      --> (("_alpha_",compt ())  &--> (("_alpha_",compt ()) ---> ("bool",-1)));
  Operator.andand      --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
  Operator.pipepipe    --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
- Operator.le          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.ge          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.lt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
- Operator.gt          --> (("_alpha_",0)  &--> (("_alpha_",0) ---> ("bool",-1)));
+ Operator.le          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
+ Operator.ge          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
+ Operator.lt          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
+ Operator.gt          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
  Operator.boolean_not --> (("bool", -1) ---> ("bool",-1));
  Operator.negate      --> (("int" , -1) ---> ("int",-1));
 ]
@@ -84,16 +86,33 @@ let rec lookup_ref x env =
 let rec define_ref x t env =
     match env with
     | [] -> ()
-    | (x',t')::env' ->
-        if x' = x then t' := t 
+    | (x', t')::env' ->
+        if x' = x then t' := (Some t )
         else define_ref x t env'
 
-let iNT = TVar(TIdentifier("int",-1),[])
-let cHAR = TVar(TIdentifier("char",-1),[])
-let sTR = TVar(TIdentifier("string",-1),[])
-let bOOL = TVar(TIdentifier("bool",-1),[])
+let tInt = TVar(TIdentifier("int",-1),[])
+let tChar = TVar(TIdentifier("char",-1),[])
+let tString = TVar(TIdentifier("string",-1),[])
+let tBool = TVar(TIdentifier("bool",-1),[])
 let tUnit = TVar(TIdentifier("U",-1),[])
 
+(*** Unification of typing ***)
+module MapUnif = Map.Make(struct
+    type t = int  
+    let compare = compare
+end)
+
+let rec unification ty ty_exp =
+    match ty, ty_exp with
+    | TVar(tI,_), TVar(tI_ex,_) when tI = tI_ex-> ty 
+    | TVar(_,_), TVar(TIdentifier(s,nb),_) when (nb >= 0) -> ty 
+    | TVar(TIdentifier(s,nb),_), TVar(_,_) when (nb >= 0) -> ty_exp 
+    (*| _ , TVar(_,_) -> unification ty_exp ty *)
+    | TArrow(a1,b1), TArrow(a2,b2)  -> TArrow(unification a1 a2, unification b1 b2)
+    | TSum(_), TSum(_)          -> failwith "Unif TSum Not Implemented"
+    | TProd(_), TProd(_)        -> failwith "Unif TProd Not Implemented"
+    | TRec(_,_), TRec(_,_)      -> failwith "Unif TRec Not Implemented"
+    |(_,_)                      -> raise UnificationError
 (**
  * Check a program.
  *
@@ -129,32 +148,15 @@ let program p =
 
   and check_expr exp e pr_ex =
 	 match exp with
-     | EInt(_)	    -> iNT 
-     | EChar(_)     -> cHAR
-     | EString(_)   -> sTR
-     | EVar(v)	    -> 
-        if identifier v 
-        then lookup v 
-        else 
-            begin match ((lookup_ref v e),pr_ex) with 
-            | (Some t,Some pr_t) -> 
-                begin match (t,pr_t) with
-                | (TVar(TIdentifier("_alpha_",nb),_) ,pr_t) when (nb >= 0)-> pr_t
-                | ( t ,TVar(TIdentifier("_alpha_",nb),_))  when (nb >= 0)  -> t
-                | (t1,t2) -> 
-                    if t1 = t2 then t1
-                    else raise EVarErrorTyping
-                end
-            | (Some t , _ ) -> t
-            | (None,_) -> raise (UndeclaredVariable v)
-            end
-    
+     | EInt(_)	    -> tInt 
+     | EChar(_)     -> tChar
+     | EString(_)   -> tString
+     | EVar(v)	    -> check_EVar v e pr_ex
      | EAnnot(ex,ty)	->
         let t_ty = check_typ ty e in
         let t_ex = check_expr ex e (Some t_ty) in
-        if t_ty = t_ex then t_ty
-        else raise EAnnotErrorTypping
-            
+        unification t_ty t_ex
+
      | ESeq(es)     -> check_ESeq es e pr_ex 
      
      | EDef(v,exp2)    ->
@@ -171,12 +173,12 @@ let program p =
      | EProd(_,_)	-> failwith "EProd Not implemented"
  
   and check_simple i ty ex e =
-    let ty'= check_expr ex e None in
+    let ty_ex = check_expr ex e None in
     match ty with 
-     | None   -> bind i ty' e
-     | Some p -> let ty'' = check_typ p e in
-        if ty'' = ty' then bind i ty' e
-        else raise SimpleErrorTyping
+     | None   -> bind i ty_ex e
+     | Some p -> let ty' = check_typ p e in
+        let ty_fi = unification ty' ty_ex in 
+            bind i ty_fi e
 
   and check_ESeq es e  pr_ex =
       match es with
@@ -211,11 +213,31 @@ let program p =
     | None    ->
         let ty'' = typage "_alpha_"  (compt ()) in
         let e' = bind i ty'' e in
-        TArrow( ty'',check_expr exp e' pr_ex)
+        let t_ex = check_expr exp e' pr_ex in
+        begin match i with
+        | Unnamed -> TArrow(ty'', t_ex)
+        | Named v -> begin match lookup_ref v e' with
+            | Some t -> TArrow(t, t_ex)
+            | None -> raise EFunErrorTyping
+            end
+        end
     | Some t  ->
         let ty'' = check_typ t e in
         let e' = bind i ty'' e in
-        TArrow(ty'', check_expr exp e' pr_ex )
+        TArrow(ty'', check_expr exp e' pr_ex)
+
+  and check_EVar v e pr_ex =
+        if identifier v 
+        then lookup v 
+        else 
+            begin match ((lookup_ref v e),pr_ex) with 
+            | (Some t,Some pr_t) -> 
+                 let t_f = unification t pr_t in
+                 define_ref v t e ; t_f
+            | (Some t_f , _ ) ->
+                 define_ref v t_f e ; t_f
+            | (None,_) -> raise (UndeclaredVariable v)
+            end
 
   and check_typ ty e =
     match ty with 
