@@ -33,6 +33,9 @@ module Env : sig
      and their associated values in [e]. *)
   val entries : 'a t -> (value_identifier * 'a) list
 
+  (* [rev_entries e] is the reverse of [entries e]. *)
+  val rev_entries : 'a t -> (value_identifier * 'a) list
+
   exception DefiningUndeclaredVariable of value_identifier
   exception UndefinedVariable of value_identifier
   exception UndeclaredVariable of value_identifier
@@ -44,6 +47,14 @@ end = struct
   type 'a t = (value_identifier * 'a option ref) list
 
   let entries env = try List.rev_map (fun (x, r) ->
+    match !r with
+    | None -> raise Not_found
+    | Some r -> (x, r)
+  ) env 
+  with Not_found -> []
+
+  (* TODO: remove, and add [last_entry env] *)
+  let rev_entries env = try List.map (fun (x, r) ->
     match !r with
     | None -> raise Not_found
     | Some r -> (x, r)
@@ -151,9 +162,12 @@ let identifier (Identifier x) = text x
 
 let vcat ds = sepmap hardline (fun x -> x) ds ^^ hardline
 
+let print_env_identifier (i, v) =
+    text ":-" ++ identifier i ++ text "=" ++ print v
+
 let print_environment env =
-  vcat (List.map (fun (x, v) -> 
-    text ":-" ++ identifier x ++ text "=" ++ print v
+  vcat (List.map (fun (i, v) -> 
+    print_env_identifier(i, v)
   ) (Env.entries env))
 
 let canonicalize s = 

@@ -26,7 +26,9 @@ let start parse_input output e =
       let ast =
         parse_input (Lexing.from_string (read_entry ())) "(repl)" in
         let ev = Interpreter.eval ast ev in
-          output (Runtime.print_environment ev);
+          (* FIXME: List.hd on List.rev on List.rev_map is not efficient *)
+          output (Runtime.print_env_identifier (List.hd (Runtime.Env.rev_entries ev)));
+          print_newline ();
           eval_loop ev
     with
       End_of_file -> ()
