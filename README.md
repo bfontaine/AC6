@@ -3,9 +3,11 @@
 This is a school project for the compilation class. The goal is to write an
 interpreter for Clap, a toy language designed by [YRG][yrg].
 
-[yrg]: http://www.pps.univ-paris-diderot.fr/~yrg/
+Build with `make`, run with `./clap <your file>`. The code of the project is on
+[Github][gh], the repository will be made public shortly after the due date.
 
-Build with `make`, run with `./clap <your file>`.
+[gh]: https://github.com/bfontaine/AC6
+[yrg]: http://www.pps.univ-paris-diderot.fr/~yrg/
 
 ## Additional Features
 
@@ -74,7 +76,7 @@ filenames completion for the `clap` executable.
 
 ### Vim syntax highlighting
 
-Run `make vim-clap-syntax` and follow the instructions. It will add syntax
+Run `make vim-clap-syntax` and follow the instructions. It will add basic syntax
 support for Clap in Vim.
 
 ## Tests
