@@ -5,7 +5,8 @@ let flag = ref false
 (** Exception of check typing **)
 exception UndeclaredVariable of value_identifier
 exception SimpleErrorTyping
-exception EAnnotErrorTypping
+exception EFunErrorTyping
+exception EAnnotErrorTyping
 exception EAppErrorTyping
 exception EVarErrorTyping
 exception TVarErrorTyping 
@@ -85,8 +86,8 @@ let rec lookup_ref x env =
 let rec define_ref x t env =
     match env with
     | [] -> ()
-    | (x',t')::env' ->
-        if x' = x then t' := t 
+    | (x', t')::env' ->
+        if x' = x then t' := (Some t )
         else define_ref x t env'
 
 let tInt = TVar(TIdentifier("int",-1),[])
@@ -104,8 +105,9 @@ end)
 let rec unification ty ty_exp =
     match ty, ty_exp with
     | TVar(tI,_), TVar(tI_ex,_) when tI = tI_ex-> ty 
-    | TVar(tI,_), TVar(TIdentifier(s,nb),_) when nb > 0 -> ty 
-    | _ , TVar(_,_) -> unification ty_exp ty
+    | TVar(_,_), TVar(TIdentifier(s,nb),_) when (nb >= 0) -> ty 
+    | TVar(TIdentifier(s,nb),_), TVar(_,_) when (nb >= 0) -> ty_exp 
+    (*| _ , TVar(_,_) -> unification ty_exp ty *)
     | TArrow(a1,b1), TArrow(a2,b2)  -> TArrow(unification a1 a2, unification b1 b2)
     | TSum(_), TSum(_)          -> failwith "Unif TSum Not Implemented"
     | TProd(_), TProd(_)        -> failwith "Unif TProd Not Implemented"
@@ -153,7 +155,7 @@ let program p =
      | EAnnot(ex,ty)	->
         let t_ty = check_typ ty e in
         let t_ex = check_expr ex e (Some t_ty) in
-        unification t_ty t_ex 
+        unification t_ty t_ex
 
      | ESeq(es)     -> check_ESeq es e pr_ex 
      
@@ -171,12 +173,12 @@ let program p =
      | EProd(_,_)	-> failwith "EProd Not implemented"
  
   and check_simple i ty ex e =
-    let ty_ex= check_expr ex e None in
+    let ty_ex = check_expr ex e None in
     match ty with 
      | None   -> bind i ty_ex e
      | Some p -> let ty' = check_typ p e in
-        let ty_fi = unification ty' ty_ex in
-        bind i ty_fi e 
+        let ty_fi = unification ty' ty_ex in 
+            bind i ty_fi e
 
   and check_ESeq es e  pr_ex =
       match es with
@@ -192,7 +194,17 @@ let program p =
         begin match t_f with
         | TArrow(t_1,t )  -> 
             let t_ex = check_expr e1 e (Some t_1) in
-            unification t_1 t_ex
+            begin match (t_1,t_ex) with
+            | (TVar(TIdentifier("_alpha_",nb),_),t1) -> 
+                if nb >= 0 then t 
+                else raise EAppErrorTyping 
+            | (t1,TVar(TIdentifier("_alpha_",nb),_)) -> 
+                if nb >= 0 then t
+                else raise EAppErrorTyping 
+            | (t1,t2) ->
+                if t1 = t2 then t
+                else raise EAppErrorTyping 
+            end
         | _     -> failwith "EApp Not implemented"
         end
 
@@ -201,11 +213,18 @@ let program p =
     | None    ->
         let ty'' = typage "_alpha_"  (compt ()) in
         let e' = bind i ty'' e in
-        TArrow( ty'',check_expr exp e' pr_ex)
+        let t_ex = check_expr exp e' pr_ex in
+        begin match i with
+        | Unnamed -> TArrow(ty'', t_ex)
+        | Named v -> begin match lookup_ref v e' with
+            | Some t -> TArrow(t, t_ex)
+            | None -> raise EFunErrorTyping
+            end
+        end
     | Some t  ->
         let ty'' = check_typ t e in
         let e' = bind i ty'' e in
-        TArrow(ty'', check_expr exp e' pr_ex )
+        TArrow(ty'', check_expr exp e' pr_ex)
 
   and check_EVar v e pr_ex =
         if identifier v 
@@ -213,17 +232,12 @@ let program p =
         else 
             begin match ((lookup_ref v e),pr_ex) with 
             | (Some t,Some pr_t) -> 
-                begin match (t,pr_t) with
-                | (TVar(TIdentifier("_alpha_",nb),_) ,pr_t) when (nb > 0)-> pr_t
-                | ( t ,TVar(TIdentifier("_alpha_",nb),_))  when (nb > 0)  -> t
-                | (t1,t2) -> 
-                    if t1 = t2 then t1
-                    else raise EVarErrorTyping
-                end
-            | (Some t , _ ) -> t
+                 let t_f = unification t pr_t in
+                 define_ref v t e ; t_f
+            | (Some t_f , _ ) ->
+                 define_ref v t_f e ; t_f
             | (None,_) -> raise (UndeclaredVariable v)
             end
- 
 
   and check_typ ty e =
     match ty with 
