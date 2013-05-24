@@ -122,9 +122,9 @@ let print, generic_print = mk_prim "print" (
     | VInt i        -> print_int    i; vunit
     | VChar c       -> print_char   c; vunit
     | VString s     -> print_string s; vunit
-    | VStruct _     -> print_string "{struct}"; vunit
-    | VClosure(_,_) -> print_string "{closure}"; vunit
-    | VPrimitive _  -> print_string "{primitive}"; vunit
+    | VStruct _     -> print_string "<struct>"; vunit
+    | VClosure(_,_) -> print_string "<closure>"; vunit
+    | VPrimitive _  -> print_string "<primitive>"; vunit
 )
 
 let _ =

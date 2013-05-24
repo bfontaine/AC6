@@ -36,6 +36,10 @@ module Env : sig
   (* [last_entry e] returns the last entry. *)
   val last_entry : 'a t -> (value_identifier * 'a)
 
+  (* [merge le] merges a list of environments into a new environment. If an
+   * identifier is bound in two or more environment, the last binding is used. *)
+  val merge : 'a t list -> 'a t
+
   exception DefiningUndeclaredVariable of value_identifier
   exception UndefinedVariable of value_identifier
   exception UndeclaredVariable of value_identifier
@@ -74,8 +78,7 @@ end = struct
     | Named x -> (x, ref None) :: env
 
   (* Precondition: the identifier cannot be anonymous. *)
-  let lookup_ref x env =
-    List.assoc x env
+  let lookup_ref = List.assoc
 
   exception DefiningUndeclaredVariable of value_identifier
   exception UndefinedVariable of value_identifier
@@ -88,20 +91,39 @@ end = struct
     | Unnamed -> raise CannotDefineAnonymous
     | Named x ->
       try
-	(lookup_ref x env) := Some v
+        (lookup_ref x env) := Some v
       with Not_found ->
-	raise (DefiningUndeclaredVariable x)
+        raise (DefiningUndeclaredVariable x)
 
   let lookup x (env : 'a t) =
     match x with
     | Unnamed -> raise CannotLookupAnonymous
     | Named x ->
       try
-	match !(lookup_ref x env) with
-	| Some x -> x
-	| None -> raise (UndefinedVariable x)
+        match !(lookup_ref x env) with
+        | Some x -> x
+        | None -> raise (UndefinedVariable x)
       with Not_found ->
-	raise (UndeclaredVariable x)
+        raise (UndeclaredVariable x)
+
+  let merge envs =
+    List.fold_left (fun merged e ->
+
+      List.fold_left (fun ev (x, b) ->
+        match !b with
+          Some v ->
+            (try
+              (lookup_ref x ev) := Some v; ev
+             with Not_found ->
+              bind (Named x) v ev)
+        | None ->
+            (try
+              ignore (lookup_ref x ev); ev
+             with Not_found ->
+              declare (Named x) ev)
+      ) merged e
+
+    ) (empty ()) envs
 
 end
 

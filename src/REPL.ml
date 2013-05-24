@@ -1,7 +1,10 @@
 let repl_version = "0.1.0"
 
-let print_prompt () =
+let ps1 () =
   (print_string "clap> ")
+
+let ps2 () =
+  (print_string "   ?> ")
 
 let print_banner () =
   print_string ("** Clap REPL v" ^ repl_version ^ "\n");
@@ -10,12 +13,12 @@ let print_banner () =
   print_string "**\n"
 
 let read_entry () =
-  print_prompt ();
+  ps1 ();
   let rec read_lines previous =
     let s = read_line () in
       if s = ""
       then previous
-      else read_lines (previous ^ " " ^ s)
+      else (ps2 (); read_lines (previous ^ " " ^ s))
   in
     read_lines ""
 

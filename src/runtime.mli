@@ -8,8 +8,8 @@ module Env : sig
      to an identifier. *)
   type 'a t
 
-  (* [bind x v e] returns an environment where [x] is 
-     associated to [v] and the remaining entries are 
+  (* [bind x v e] returns an environment where [x] is
+     associated to [v] and the remaining entries are
      the ones of [e]. *)
   val bind    : argument_identifier -> 'a -> 'a t -> 'a t
 
@@ -17,7 +17,7 @@ module Env : sig
      without any associated value. *)
   val declare : argument_identifier -> 'a t -> 'a t
 
-  (* [define x v e] assumes that [x] is already declared 
+  (* [define x v e] assumes that [x] is already declared
      in [e] but with no associated value. This function
      associates [v] to this identifier [x] by modifiying
      [e] in place. *)
@@ -26,15 +26,19 @@ module Env : sig
   (* [empty ()] is the empty environment. *)
   val empty   : unit -> 'a t
 
-  (* [lookup x e] returns the value associated to [x] in [e]. *)
-  val lookup  : argument_identifier -> 'a t -> 'a
-
   (* [entries e] returns all the pair formed with identifier
      and their associated values in [e]. *)
   val entries : 'a t -> (value_identifier * 'a) list
 
   (* [last_entry e] returns the last entry. *)
   val last_entry : 'a t -> (value_identifier * 'a)
+
+  (* [lookup x e] returns the value associated to [x] in [e]. *)
+  val lookup  : argument_identifier -> 'a t -> 'a
+
+  (* [merge le] merges a list of environments into a new environment. If an
+   * identifier is bound in two or more environment, the last binding is used. *)
+  val merge   : 'a t list -> 'a t
 
   exception DefiningUndeclaredVariable of value_identifier
   exception UndefinedVariable of value_identifier
@@ -43,9 +47,9 @@ module Env : sig
   exception CannotLookupAnonymous
 end
 
-(* The syntax for values parameterized by the type 
+(* The syntax for values parameterized by the type
    of the primitives. *)
-type 'p value = 
+type 'p value =
 | VInt       of int
 | VChar      of char
 | VString    of string
@@ -77,5 +81,3 @@ val print_environment : 'p venv -> Pprint.document
    are sorted by alphabetical order of their constructor names. *)
 val canonicalize : 'a structure -> 'a structure
 
-
-  

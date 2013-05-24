@@ -52,5 +52,5 @@ def formula (n) =
   gen (n)
 
 val bench = 
-  val s = sat (True) (Empty) (formula 500) in
+  val s = sat (True) (Empty) (formula 50) in
   OK
