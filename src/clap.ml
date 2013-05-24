@@ -67,7 +67,7 @@ let process_file filename =
         if !benchmark then
           output (Pprint.text
                   (Printf.sprintf "TIME[%07.3fs %s]\n" time filename));
-        output (Runtime.print_environment result); result
+        (if not !repl then output (Runtime.print_environment result)); result
     ) else (Runtime.Env.empty ())
 
 let asts =
