@@ -1,4 +1,6 @@
-let repl_version = "0.1.0"
+let repl_version = "0.2.0"
+
+exception Clear_env
 
 let ps1 () =
   (print_string "clap> ")
@@ -6,19 +8,38 @@ let ps1 () =
 let ps2 () =
   (print_string "   ?> ")
 
-let print_banner () =
-  print_string ("** Clap REPL v" ^ repl_version ^ "\n");
-  print_string "**\n";
-  print_string "** Press ^D to exit.\n";
-  print_string "**\n"
+(* helper *)
+let pl s =
+  print_string (s ^ "\n")
 
-let read_entry () =
+let print_banner () =
+  pl ("** Clap REPL v" ^ repl_version);
+  pl "**";
+  pl "** Press ^D to exit.";
+  pl "**"
+
+let print_help () =
+  pl "";
+  pl "-- Help --";
+  pl "";
+  pl "/clear           : clear the environment";
+  pl "/exit, /quit, ^D : exit the REPL";
+  pl "/help            : print this help";
+  pl ""
+
+let rec read_entry () =
   ps1 ();
   let rec read_lines previous =
     let s = read_line () in
-      if s = ""
-      then previous
-      else (ps2 (); read_lines (previous ^ " " ^ s))
+      match s with
+      | "/exit"  -> raise Exit
+      | "/quit"  -> raise Exit
+      | "/clear" -> raise Clear_env
+      | "/help"  -> (print_help (); read_entry ())
+
+      | "" -> previous
+      | s  ->
+        (ps2 (); read_lines (previous ^ " " ^ s))
   in
     read_lines ""
 
@@ -34,6 +55,9 @@ let start parse_input output e =
           eval_loop ev
     with
       End_of_file -> ()
+    | Exit        -> ()
+
+    | Clear_env -> eval_loop (Runtime.Env.empty ())
 
     | Not_found -> eval_loop ev
 
