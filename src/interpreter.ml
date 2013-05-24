@@ -128,7 +128,7 @@ and eval_expr exp e = match exp with
         end in
           (c', ex')
       in
-        hc (VStruct(List.map eval_constr cl))
+        hc (VStruct(List.sort compare (List.rev_map eval_constr cl)))
 
   (* sum contructors *)
   | ESum(c, _, e1) -> let e2 = begin match e1 with
@@ -263,7 +263,7 @@ and eval_pprod px ex_li envt =
         match eval_psum c1 p1 c2 p2 ev with
         | Some e -> e
         | _ -> raise Exit
-    ) envt px ex_li)
+    ) envt (List.sort compare px) ex_li)
   with
     Invalid_argument _ -> None
   | Exit -> None
