@@ -1,0 +1,5 @@
+:- lookup = <code>
+:- set = <code>
+:- sat = <code>
+:- formula = <code>
+:- bench = OK

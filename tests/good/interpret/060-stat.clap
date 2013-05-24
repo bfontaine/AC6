@@ -1,0 +1,56 @@
+def lookup (n) (env) = 
+  env . case {
+    Empty => 
+     Undefined
+  | Entry [{ Var -> k, Val -> v, Next -> e }] =>
+     if n = k then v else lookup n e
+  }
+
+def set (pos) (n) (env) = 
+  Entry [{ Var <- n, Val <- pos, Next <- env }]
+
+def sat (pos) (env) = 
+  case {
+    Var [n] => lookup n env . case {
+      True => if pos then Sat [env] else UnSat [env]
+    | False => if pos then UnSat [env] else Sat [env]
+    | Undefined => Sat [set pos n env]
+    }
+
+  | Conj [{ L -> l, R -> r }] =>
+    sat (~ pos) (env) (Disj [{ L <- Neg [l], R <- Neg [r] }])
+
+  | Disj [{ L -> l, R -> r }] => 
+    if pos then
+      (sat pos env l . case {
+        Sat [env] => Sat [env]
+      | UnSat [env] => sat pos env r
+      })
+    else 
+      (sat pos env l . case {
+        Sat [env] => sat pos env r
+      | UnSat [env] => UnSat [env]
+      })
+
+  | Neg [e] => 
+    sat (~ pos) (env) e
+ 
+  | True =>
+    Sat [env]
+  }
+
+def formula (n) =
+  def aux (k) (i) =
+    if k = 0 then True else 
+    if k = i then Conj [{ L <- Var [k], R <- aux (k - 1) (i) }] else
+    Conj [{ L <- Neg [Var [k]], R <- aux (k - 1) i  }]
+  in
+  def gen (k) = 
+    if k = 0 then True else
+    Conj [{ L <- aux (n) (k), R <- gen (k - 1) }]
+  in
+  gen (n)
+
+val bench = 
+  val s = sat (True) (Empty) (formula 500) in
+  OK
