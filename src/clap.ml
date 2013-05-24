@@ -8,8 +8,8 @@ let options = Arg.align [
   "-p", Arg.Set pretty_print,
   " Display the parsed input on stdout.";
 
-  "--parse-only", Arg.Set parse_only,
-  " Do syntax analysis only.";
+  "-i", Arg.Set repl,
+  "Alias for --repl.";
 
   "--bench", Arg.Set benchmark,
   " Benchmark.";
@@ -20,11 +20,14 @@ let options = Arg.align [
   "--memo", Arg.Set Memo.flag,
   " Memoization";
 
-  "--type", Arg.Set Typecheck.flag,
-  " Typecheck before evaluation.";
+  "--parse-only", Arg.Set parse_only,
+  " Do syntax analysis only.";
 
   "--repl", Arg.Set repl,
-  " Use a REPL instead of the provided files."
+  " Use a REPL instead of the provided files.";
+
+  "--type", Arg.Set Typecheck.flag,
+  " Typecheck before evaluation."
 ]
 
 (* helper function *)
