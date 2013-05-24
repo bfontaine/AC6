@@ -8,6 +8,7 @@ exception SimpleErrorTyping
 exception EFunErrorTyping
 exception EAnnotErrorTyping
 exception EAppErrorTyping
+exception EAppErrorTVar of string * int
 exception EVarErrorTyping
 exception TVarErrorTyping 
 exception UnificationError
@@ -107,7 +108,6 @@ let rec unification ty ty_exp =
     | TVar(tI,_), TVar(tI_ex,_) when tI = tI_ex-> ty 
     | TVar(_,_), TVar(TIdentifier(s,nb),_) when (nb >= 0) -> ty 
     | TVar(TIdentifier(s,nb),_), TVar(_,_) when (nb >= 0) -> ty_exp 
-    (*| _ , TVar(_,_) -> unification ty_exp ty *)
     | TArrow(a1,b1), TArrow(a2,b2)  -> TArrow(unification a1 a2, unification b1 b2)
     | TSum(_), TSum(_)          -> failwith "Unif TSum Not Implemented"
     | TProd(_), TProd(_)        -> failwith "Unif TProd Not Implemented"
@@ -144,7 +144,7 @@ let program p =
   and check_vdef v e =
     match v with
     | Simple(Binding(i, ty), ex) -> check_simple i ty ex e 
-    | MutuallyRecursive(l) -> failwith "MutuallyRecursive Not implemented"
+    | MutuallyRecursive(l) -> check_mutually_recursive l e
 
   and check_expr exp e pr_ex =
 	 match exp with
@@ -171,7 +171,29 @@ let program p =
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
      
      | EProd(_,_)	-> failwith "EProd Not implemented"
- 
+
+
+  and check_mutually_recursive l e =
+    let e' = 
+        (* 1- declare empty functions *)
+        List.fold_left (fun e' -> function
+        | (Binding(i, _), _) -> declare i e')
+        e l
+    in
+    (* 2- bind their bodies *)
+    List.iter (function
+      | (Binding(Named(i), ty), body) -> 
+            let t_body = check_expr body e' None  in
+            let t_ty = match ty with 
+                | None -> t_body  
+                | Some p -> check_typ p e' 
+            in
+            let t_body_fn = unification t_ty t_body in
+            define_ref i t_body_fn e'
+      | _ -> ()
+    ) l; e'
+
+
   and check_simple i ty ex e =
     let ty_ex = check_expr ex e None in
     match ty with 
@@ -191,22 +213,20 @@ let program p =
 
   and check_EApp f e1 e pr_ex =
        let t_f = check_expr f e pr_ex in
-        begin match t_f with
-        | TArrow(t_1,t )  -> 
-            let t_ex = check_expr e1 e (Some t_1) in
-            begin match (t_1,t_ex) with
-            | (TVar(TIdentifier("_alpha_",nb),_),t1) -> 
-                if nb >= 0 then t 
-                else raise EAppErrorTyping 
-            | (t1,TVar(TIdentifier("_alpha_",nb),_)) -> 
-                if nb >= 0 then t
-                else raise EAppErrorTyping 
-            | (t1,t2) ->
-                if t1 = t2 then t
-                else raise EAppErrorTyping 
-            end
-        | _     -> failwith "EApp Not implemented"
-        end
+        match t_f with
+        | TArrow(ta_1,ta_2 )  -> check_TArrow ta_1 ta_2 e1 e 
+        | TVar(TIdentifier(str,nb),_) ->  raise (EAppErrorTVar (str, nb))
+        | TSum(_) -> failwith "EApp -> TSum Not implemented"
+        | TProd(_) -> failwith "EApp -> TProd Not implemented"
+        | TRec(_,_) -> failwith "EApp -> TRec Not implemented"
+
+  and check_TArrow ta_1 ta_2 e1 e =
+        let t_ex = check_expr e1 e (Some ta_1) in
+        match (ta_1,t_ex) with
+        | (TVar(TIdentifier("_alpha_",nb),_),t1) when nb >= 0 -> ta_2
+        | (t1,TVar(TIdentifier("_alpha_",nb),_)) when nb >= 0 -> ta_2
+        | (t1,t2) when t1 = t2 -> ta_2
+        | (_, _) -> raise EAppErrorTyping 
 
   and check_EFun i ty exp e pr_ex =
     match ty with
