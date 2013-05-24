@@ -100,7 +100,7 @@ dist:
 	    mkdir -p $$i;					\
           fi;					                \
         done
-	tar cvfz $(PACKAGE).tar.gz $(PACKAGE)
+	tar cfz $(PACKAGE).tar.gz $(PACKAGE)
 
 check: all
 	$(MAKE) -C tests check
