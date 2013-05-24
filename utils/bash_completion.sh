@@ -10,7 +10,7 @@ _clap() {
 
     case "$cur" in
         -*)
-        COMPREPLY=( $( compgen -W '-p --parse-only --bench --memo \
+        COMPREPLY=( $( compgen -W '-i -p --parse-only --bench --memo \
                                    --type -help --help \
                                    --repl --debug' -- $cur )) ;;
 
