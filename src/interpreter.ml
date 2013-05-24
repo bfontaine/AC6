@@ -97,8 +97,6 @@ and eval_expr exp e = match exp with
           Primitive.apply p (eval_expr e1 e)
 
       | VClosure(ev, branchs) ->
-          (* choose between eval_branchs and eval_memo_branchs,
-             depending of the memoization flag. *)
           eval_memo_branchs ev branchs (eval_expr e1 e)
 
       | _ ->
@@ -176,10 +174,10 @@ and eval_memo_branchs ev branchs exp =
       see: http://stackoverflow.com/a/12161946/735926
      *)
     try
-        Hashtbl.find memo branchs
+        Hashtbl.find memo (branchs, exp)
     with Not_found ->
       let result = eval_branchs ev branchs exp in
-        Hashtbl.add memo branchs result;
+        Hashtbl.add memo (branchs, exp) result;
         result)
   else
     eval_branchs ev branchs exp
