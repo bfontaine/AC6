@@ -1,4 +1,10 @@
-
+(**    ______  __     ___     ____    __
+ *    / ____/ / /    /   |   / __ \  / /
+ *   / /     / /    / /| |  / /_/ / / /
+ *  / /___  / /___ / ___ | / ____/ /_/
+ *  \____/ /_____//_/  |_|/_/     (_)
+ *
+ **)
 let pretty_print = ref false
 let parse_only = ref false
 let benchmark = ref false
@@ -8,17 +14,20 @@ let options = Arg.align [
   "-p", Arg.Set pretty_print,
   " Display the parsed input on stdout.";
 
+  (* 'i' stands for 'i(nteractive interpreter)' ) *)
   "-i", Arg.Set repl,
   "Alias for --repl.";
 
   "--bench", Arg.Set benchmark,
   " Benchmark.";
 
+  (* This set Debug.flag to [true], which may be used to print
+     debug informations. *)
   "--debug", Arg.Set Debug.flag,
   " Debug mode.";
 
   "--memo", Arg.Set Memo.flag,
-  " Memoization";
+  " Memoization and maximal sharing.";
 
   "--parse-only", Arg.Set parse_only,
   " Do syntax analysis only.";
