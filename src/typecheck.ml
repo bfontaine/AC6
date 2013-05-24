@@ -233,7 +233,7 @@ let program p =
             begin match ((lookup_ref v e),pr_ex) with 
             | (Some t,Some pr_t) -> 
                  let t_f = unification t pr_t in
-                 define_ref v t e ; t_f
+                 define_ref v t_f e ; t_f
             | (Some t_f , _ ) ->
                  define_ref v t_f e ; t_f
             | (None,_) -> raise (UndeclaredVariable v)
