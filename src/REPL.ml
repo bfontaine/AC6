@@ -18,3 +18,45 @@ let read_entry () =
       else read_lines (previous ^ " " ^ s)
   in
     read_lines ""
+
+let start parse_input output e =
+  print_banner ();
+  let rec eval_loop ev =
+    try
+      let ast =
+        parse_input (Lexing.from_string (read_entry ())) "(repl)" in
+        let ev = Interpreter.eval ast ev in
+          output (Runtime.print_environment ev);
+          eval_loop ev
+    with
+      End_of_file -> ()
+
+    | Runtime.Env.UndeclaredVariable (AST.Identifier x) ->
+        print_string ("Error: Undeclared variable '" ^ x ^ "'.\n");
+        eval_loop ev
+
+    | Runtime.Env.UndefinedVariable (AST.Identifier x) ->
+        print_string ("Error: Undefined variable '" ^ x ^ "'.\n");
+        eval_loop ev
+
+    | Runtime.Env.DefiningUndeclaredVariable (AST.Identifier x) ->
+        print_string ("Error: I can't define '" ^ x ^ "', it's undeclared.\n");
+        eval_loop ev
+
+    | Runtime.Env.CannotLookupAnonymous ->
+        print_string "Error: Cannot lookup anonymous.\n";
+        eval_loop ev
+
+    | Runtime.Env.CannotDefineAnonymous ->
+        print_string "Error: Cannot define anonymous.\n";
+        eval_loop ev
+
+    | Runtime.No_match ->
+        print_string "Error: The pattern didn't match.\n";
+        eval_loop ev
+
+    | Primitive.InvalidPrimitiveCall ->
+        print_string "Error: Invalid primitive call.\n";
+        eval_loop ev
+  in
+    eval_loop e
