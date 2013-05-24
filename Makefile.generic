@@ -81,6 +81,7 @@ clean:
 	@ $(OCAMLBUILD) -clean
 	find -name '*~' -exec rm '{}' \;
 	rm -fr *~ $(TARGET) $(PACKAGE) $(PACKAGE).tar.gz
+	rm -f *.tar.gz.sig
 
 doc: byte
 	$(OCAMLBUILD) $(TARGET).docdir/index.html
