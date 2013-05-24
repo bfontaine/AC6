@@ -107,8 +107,10 @@ end = struct
         raise (UndeclaredVariable x)
 
   let merge envs =
-    List.fold_left (fun merged e ->
-
+    (* 1- create an empty environment E *)
+    (* 2- for each environment E', *)
+    List.fold_left (
+      (* and for each binding B of E', add B to E *)
       List.fold_left (fun ev (x, b) ->
         match !b with
           Some v ->
@@ -121,8 +123,7 @@ end = struct
               ignore (lookup_ref x ev); ev
              with Not_found ->
               declare (Named x) ev)
-      ) merged e
-
+      )
     ) (empty ()) envs
 
 end
