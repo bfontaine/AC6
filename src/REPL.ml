@@ -4,7 +4,7 @@ let ps1 () =
   (print_string "clap> ")
 
 let ps2 () =
-  (print_string "clap* ")
+  (print_string "   ?> ")
 
 let print_banner () =
   print_string ("** Clap REPL v" ^ repl_version ^ "\n");
