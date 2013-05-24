@@ -1,0 +1,2 @@
+** ('a -> 'b) -> 'a -> 'b
+def apply (f) (x) = f (x)

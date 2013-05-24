@@ -1,0 +1,6 @@
+** int -> int -> int
+def  f (x) (y) = g(x) + h(h(b))
+** 'a -> 'a
+with g (a) = a
+** int -> int
+with h (b) = b + b
