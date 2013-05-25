@@ -1,0 +1,1 @@
+type applied <f, x> = x <f>
