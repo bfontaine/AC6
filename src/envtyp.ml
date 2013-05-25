@@ -12,6 +12,7 @@ exception EVarErrorTyping
 exception TVarErrorTyping 
 exception UnificationError
 exception BranchsErrorVide
+exception BranchErrorUnion
 
 (** Environment of typing  **)
 type env = (value_identifier * AST.typ option ref)list
