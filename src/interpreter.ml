@@ -241,7 +241,6 @@ and eval_psum pconstr subpatt econstr subvalue envt =
   (* If the construtor ids don't match, the pattern doesn't match *)
   if pconstr <> econstr then None
   else
-    (* TODO [perfs] try with a match on a pair instead of a double-match *)
     match subpatt with
     (* sum with sub-pattern *)
     | Some patt ->
