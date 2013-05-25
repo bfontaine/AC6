@@ -12,6 +12,7 @@ exception EAppErrorTVar of string * int
 exception EVarErrorTyping
 exception TVarErrorTyping 
 exception UnificationError
+exception BranchsErrorVide
 
 (** Environment of typing  **)
 type env = (value_identifier * AST.typ option ref)list
@@ -166,7 +167,14 @@ let program p =
 
      | EApp(f,e1)   -> check_EApp f e1 e pr_ex
     
-     | ECase(_,_)	-> failwith "ECase Not implemented"
+     | ECase(ty,brs)	->
+        begin match ty with
+        | None   -> check_branchs brs e
+        | Some p ->
+            let t_ty = check_typ p e in
+            let t_brs = check_branchs brs e in
+            unification t_ty t_brs
+        end
 
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
      
@@ -258,6 +266,12 @@ let program p =
                  define_ref v t_f e ; t_f
             | (None,_) -> raise (UndeclaredVariable v)
             end
+
+  and check_branchs brs e =
+    match brs with
+    | []    -> raise BranchsErrorVide
+    | Branch(p,ex)::brs' -> failwith "branch Not Implemented"
+        
 
   and check_typ ty e =
     match ty with 
