@@ -37,7 +37,8 @@ module Env : sig
   val last_entry : 'a t -> (value_identifier * 'a)
 
   (* [merge le] merges a list of environments into a new environment. If an
-   * identifier is bound in two or more environment, the last binding is used. *)
+     identifier is bound in two or more environments, the last binding is
+     used. *)
   val merge : 'a t list -> 'a t
 
   exception DefiningUndeclaredVariable of value_identifier
@@ -118,7 +119,7 @@ end = struct
               (lookup_ref x ev) := Some v; ev
              with Not_found ->
               bind (Named x) v ev)
-        | None ->
+        | _ ->
             (try
               ignore (lookup_ref x ev); ev
              with Not_found ->
@@ -145,7 +146,7 @@ and 'p structure = (constructor_identifier * 'p) list
    environments. *)
 and 'p venv = 'p value Env.t
 
-(* The unit value. *)
+(* The unit value : { U }. *)
 let vunit = VStruct [ CIdentifier "U", None ]
 
 open Pprint
@@ -159,10 +160,12 @@ let brace e = group (text "{" ^^ e ^^ text "}")
 let print v =
   let rec print = function
     | VInt x -> text (string_of_int x)
-    | VChar c -> text "'" ^^ text (String.escaped (String.make 1 c)) ^^ text "'"
+    | VChar c ->
+        text "'" ^^ text (String.escaped (String.make 1 c)) ^^ text "'"
     | VString s -> text "\"" ^^ text (String.escaped s) ^^ text "\""
     | VStruct [ (k, None) ] -> constructor_identifier k
-    | VStruct [ (k, Some v) ] -> group (constructor_identifier k ++ bracket (print v))
+    | VStruct [ (k, Some v) ] ->
+        group (constructor_identifier k ++ bracket (print v))
     | VStruct kvs -> group (text "{" ^^ components kvs ++ text "}")
     | VClosure _ -> text "<code>"
     | VPrimitive _ -> text "<primitive>"
@@ -175,7 +178,8 @@ let print v =
     | None ->
       constructor_identifier cid
     | Some v ->
-      group (constructor_identifier cid ++ text "<-" ++ nest 2 (group (print v)))
+      group (constructor_identifier cid
+              ++ text "<-" ++ nest 2 (group (print v)))
 
   and constructor_identifier (CIdentifier s) = text s
   in
