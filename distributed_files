@@ -26,6 +26,7 @@
 ./src/clap.mli
 ./src/debug.ml
 ./src/debug.mli
+./src/envtyp.ml
 ./src/error.ml
 ./src/error.mli
 ./src/interpreter.ml

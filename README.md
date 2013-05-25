@@ -6,6 +6,14 @@ interpreter for Clap, a toy language designed by [YRG][yrg].
 Build with `make`, run with `./clap <your file>`. The code of the project is on
 [Github][gh], the repository will be made public shortly after the due date.
 
+The code has been optimized for speed, and our interpreter has been the fastest
+one since the beginning of the speed contest. When this is possible, lists are
+replaced by `Hashtbl`s to improve lookup efficiency, like in `Primitive.ml`.
+Several alternatives were explored, such as using a `Map` for the current
+environment (this is less efficient than the actual implementation using a
+list), and several micro-optimizations are done (e.g. using pattern-matching
+instead of multiple `if/else`).
+
 [gh]: https://github.com/bfontaine/AC6
 [yrg]: http://www.pps.univ-paris-diderot.fr/~yrg/
 

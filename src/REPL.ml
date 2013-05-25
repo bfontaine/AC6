@@ -1,23 +1,28 @@
 let repl_version = "0.2.0"
 
+(* This exception is used as a passed message to clear the environment *)
 exception Clear_env
 
+(* Primary prompt *)
 let ps1 () =
   (print_string "clap> ")
 
+(* Secondary prompt *)
 let ps2 () =
   (print_string "   ?> ")
 
-(* helper *)
+(* Prints a string followed by a newline *)
 let pl s =
   print_string (s ^ "\n")
 
+(* Prints a banner with the REPL version *)
 let print_banner () =
   pl ("** Clap REPL v" ^ repl_version);
   pl "**";
   pl "** Press ^D to exit.";
   pl "**"
 
+(* Prints a basic help *)
 let print_help () =
   pl "";
   pl "-- Help --";
@@ -27,6 +32,7 @@ let print_help () =
   pl "/help            : print this help";
   pl ""
 
+(* Read an entry from the user *)
 let rec read_entry () =
   ps1 ();
   let rec read_lines previous =
@@ -43,6 +49,7 @@ let rec read_entry () =
   in
     read_lines ""
 
+(* Starts the REPL *)
 let start parse_input output e =
   print_banner ();
   let rec eval_loop ev =
