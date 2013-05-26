@@ -1,0 +1,5 @@
+type boule = { Trou + Faulsse }
+
+** boule -> int
+val c = case {   Trou   => 42
+               | Faulse => 0  }

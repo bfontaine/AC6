@@ -1,0 +1,2 @@
+** 'a -> int
+def f (x) = if True then 42 else 0

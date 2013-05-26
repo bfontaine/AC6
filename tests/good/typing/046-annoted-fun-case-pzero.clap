@@ -1,0 +1,2 @@
+** string -> int
+val f = fun (x : string) => case { 0 => 42 }
