@@ -205,9 +205,11 @@ let program p =
     match patt with
     | PSum(_,_,_) -> failwith "Pattern Not Implemented"
     | PProd(_,_) -> failwith "Pattern Not Implemented"
-    | PAnd(_,_) -> failwith "Pattern Not Implemented"
-    | POr(_,_) -> failwith "Pattern Not Implemented"
-    | PNot(_) -> failwith "Pattern Not Implemented"
+    | PAnd(p1,p2) -> 
+        unification (check_pattern p1 ex e) (check_pattern p1 ex e)
+    | POr(p1,p2) -> 
+        unification (check_pattern p1 ex e) (check_pattern p1 ex e)
+    | PNot(p) -> check_pattern p ex e 
     | PVar(v) -> 
         let e' = bind (Named v) (typage "_alpha_"  (compt ())) e in
         check_expr ex e' None
