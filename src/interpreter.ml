@@ -164,7 +164,8 @@ and eval_eseq exp_seq envt =
   List.fold_left (fun _ e -> eval_expr e envt) (hc vunit) exp_seq
 
 (**
- * Evaluate a list of branchs using memoization. If the list have been
+ * Evaluate a list of branchs using memoization (if Memo.flag is not
+ * set, this is a proxy method to [eval_branchs]). If the list have been
  * called on the given expression in the past, it returns its return
  * value without calling the function. If not, it calls the list of
  * branchs on the expression as usual, and store the return value in
@@ -193,7 +194,10 @@ and eval_memo_branchs ev branchs exp =
   else
     eval_branchs ev branchs exp
 
-(* evaluate a list of branchs, given an expression *)
+(**
+ * evaluate a list of branchs, given an expression.
+ * @raise No_match if no pattern matches
+ **)
 and eval_branchs envt branchs exp =
   match branchs with
   | [] -> raise No_match
@@ -216,7 +220,7 @@ and eval_branchs envt branchs exp =
  * @param input_exp the expression on which the branch is 'applied'
  * @param envt the environment
  * @return a V-expression
- * @raise No_match if it doesn't match
+ * @raise No_match if the pattern doesn't match
  **)
 and eval_branch patt br_exp input_exp envt =
   let envt' = eval_pattern patt input_exp envt in
@@ -294,6 +298,8 @@ and eval_pprod pconstrs econstrs envt =
  * Captures the sub-value of a constructor 'B' as 'x', and return this
  * environment. Then, when the expression 'x+2' will be evaluated, 'x'
  * will be bound to the captured value.
+ *
+ * This raises No_match if the pattern doesn't match.
  **)
 and eval_pattern patt exp envt =
   match patt with
