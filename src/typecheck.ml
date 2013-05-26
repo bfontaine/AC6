@@ -68,21 +68,9 @@ let program p =
             unification t_ty t_brs
         end
 
-     | ESum(constr,ty_op,ex_op)	->
-        begin match (ty_op,ex_op) with
-        | (Some ty, Some ex) ->
-            let t_ty = check_typ ty e in
-            let t_ex = check_expr ex e None in
-            TSum([TConstructor(constr , Some (unification t_ty t_ex) )])
-        | (None ,Some ex) ->
-            let t_ex = check_expr ex e None in
-            TSum([TConstructor(constr , Some t_ex )])
-        | (None ,None ) -> TSum([TConstructor(constr,None)])
-        | (_,_) -> raise ESumErrorTyping 
-        end
-     
-     | EProd(_,_)	-> failwith "EProd Not implemented"
-
+     | ESum(constr,ty_op,ex_op)	-> TSum([check_ESum constr ty_op ex_op e])
+    
+     | EProd(ty_op,l_pr)	-> TProd(check_EProd l_pr ty_op e)
 
   and check_mutually_recursive l e =
     let e' = 
@@ -182,6 +170,24 @@ let program p =
                  define_ref v t_f e ; t_f
             | (None,_) -> raise (UndeclaredVariable v)
             end
+
+  and check_ESum constr ty_op ex_op e =
+     match (ty_op,ex_op) with
+        | (Some ty, Some ex) ->
+            let t_ty = check_typ ty e in
+            let t_ex = check_expr ex e None in
+            TConstructor(constr , Some (unification t_ty t_ex) )
+        | (None ,Some ex) ->
+            let t_ex = check_expr ex e None in
+            TConstructor(constr , Some t_ex )
+        | (None ,None ) -> TConstructor(constr,None)
+        | (_,_) -> raise ESumErrorTyping 
+
+  and check_EProd l_pr ty_op e =
+    match l_pr with
+    | [] -> []
+    | (constr,ex_op)::l_pr' -> 
+        (check_ESum constr ty_op ex_op e)::(check_EProd l_pr' ty_op e)
 
   and check_branchs brs e =
     match brs with
