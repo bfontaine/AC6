@@ -99,20 +99,21 @@ let tString = TVar(TIdentifier("string",-1),[])
 let tBool = TVar(TIdentifier("bool",-1),[])
 let tUnit = TVar(TIdentifier("U",-1),[])
 
-(*** Unification of typing ***)
-module MapUnif = Map.Make(struct
-    type t = int  
-    let compare = compare
-end)
+let list_compare l_1 l_2 ty = 
+    if l_1 = l_2 then ty 
+    else raise UnificationError
 
 let rec unification ty ty_exp =
     match ty, ty_exp with
+    | ty , ty_exp when ty = ty_exp -> ty
     | TVar(tI,_), TVar(tI_ex,_) when tI = tI_ex-> ty 
     | TVar(_,_), TVar(TIdentifier(s,nb),_) when (nb >= 0) -> ty 
     | TVar(TIdentifier(s,nb),_), TVar(_,_) when (nb >= 0) -> ty_exp 
-    | TArrow(a1,b1), TArrow(a2,b2)  -> TArrow(unification a1 a2, unification b1 b2)
-    | TSum(_), TSum(_)          -> failwith "Unif TSum Not Implemented"
-    | TProd(_), TProd(_)        -> failwith "Unif TProd Not Implemented"
     | TRec(_,_), TRec(_,_)      -> failwith "Unif TRec Not Implemented"
+    | TArrow(a1,b1), TArrow(a2,b2)  -> TArrow(unification a1 a2, unification b1 b2)
+    | TSum(l_CI_1), TSum(l_CI_2) -> 
+           list_compare (List.sort compare l_CI_1)  (List.sort compare l_CI_2) ty
+    | TProd(l_CI_1), TProd(l_CI_2)  ->
+           list_compare (List.sort compare l_CI_1)  (List.sort compare l_CI_2) ty
     |(_,_)                      -> raise UnificationError
 

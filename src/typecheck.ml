@@ -195,15 +195,18 @@ let program p =
     | Branch(p,ex)::[] -> check_branch p ex e
     | Branch(p,ex)::brs' ->
         let t_brs' = check_branchs brs' e in
-        match check_branch p ex e with
-        | t_brs when t_brs = t_brs' -> t_brs'
-        | _ -> raise BranchErrorUnion
+        let t_br = check_branch p ex e in
+        unification t_br t_brs'
 
   and check_branch p ex e = check_pattern p ex e
     
   and check_pattern patt ex e =
     match patt with
-    | PSum(constr, ty_op, patt_op)   -> TSum([check_PSum constr ty_op patt_op ex e])
+    | PSum(constr, ty_op, patt_op)   -> 
+        begin match check_PSum constr ty_op patt_op ex e with
+        | Some p -> TSum([p])
+        | None -> check_expr ex e None
+        end
     | PProd(ty_op, l_pr)    -> TProd(check_PProd l_pr ty_op ex e )
     | PAnd(p1,p2)   -> 
         unification (check_pattern p1 ex e) (check_pattern p1 ex e)
@@ -213,26 +216,29 @@ let program p =
     | PVar(v)       -> 
         let e' = bind (Named v) (typage "_alpha_"  (compt ())) e in
         check_expr ex e' None
-    | PZero         -> typage "_alpha_"  (compt ())
-    | POne          -> typage "_alpha_"  (compt ())
+    | PZero         -> check_expr ex e None
+    | POne          -> check_expr ex e None
 
   and check_PSum constr ty_op patt_op p_ex e =
      match (ty_op, patt_op) with
         | (Some ty, Some patt) ->
             let t_ty = check_typ ty e in
             let t_patt = check_pattern patt p_ex e in
-            TConstructor(constr , Some (unification t_ty t_patt))
+            Some(TConstructor(constr , Some (unification t_ty t_patt)))
         | (None ,Some patt) ->
             let t_patt = check_pattern patt p_ex e in
-            TConstructor(constr , Some t_patt )
-        | (None ,None ) -> TConstructor(constr,None)
+            Some(TConstructor(constr , Some t_patt ))
+        | (None ,None ) -> None
         | (_,_) -> raise ESumErrorTyping 
 
   and check_PProd l_pr ty_op p_ex e =
     match l_pr with
     | [] -> []
     | (constr,patt_op)::l_pr' -> 
-        (check_PSum constr ty_op patt_op p_ex e)::(check_PProd l_pr' ty_op p_ex e)
+        begin match check_PSum constr ty_op patt_op p_ex e with
+        | Some p -> p::(check_PProd l_pr' ty_op p_ex e)
+        | None -> (TConstructor(constr,None))::(check_PProd l_pr' ty_op p_ex e)
+        end
 
   and check_typs tys e =
     match tys with
