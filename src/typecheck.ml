@@ -203,61 +203,62 @@ let program p =
     | (constr, ex_op)::l_pr' ->
         (check_ESum constr ty_op ex_op e)::(check_EProd l_pr' ty_op e)
 
-  and check_branchs brs e =
-    match brs with
+  and check_branchs branchs envt =
+    match branchs with
     | []    -> raise EmptyBranchError
-    | Branch(p, ex)::[] -> check_branch p ex e
-    | Branch(p, ex)::brs' ->
-        let t_brs' = check_branchs brs' e in
-          let t_br = check_branch p ex e in
-            unification t_br t_brs'
+    | Branch(pattern, expr)::[] -> check_branch pattern expr envt
+    | Branch(pattern, expr)::branchs' ->
+        let typ_branchs' = check_branchs branchs' envt in
+          let typ_branch = check_branch pattern expr envt in
+            unification typ_branch typ_branchs'
 
-  and check_branch p ex e = check_pattern p ex e
+  and check_branch pattern expr envt =
+    let typ_patt = check_pattern pattern envt in 
+    let typ_exp  = check_expr expr envt None in
+    TArrow(typ_patt, typ_exp)
 
-  and check_pattern patt ex e =
-    match patt with
-    | PSum(constr, ty_op, patt_op) ->
-        begin match check_PSum constr ty_op patt_op ex e with
-        | Some p -> TArrow(TSum([p]), (check_expr ex e None))
-        | None ->
-            TArrow(TSum([TConstructor(constr, None)]) , (check_expr ex e None))
-        end
-    | PProd(ty_op, l_pr) ->
-        TArrow(TProd(check_PProd l_pr ty_op ex e ), (check_expr ex e None))
+  and check_pattern pattern envt =
+    match pattern with
+    | PSum(constr, typ_op, pattern_op) ->
+        TSum([check_PSum constr typ_op pattern_op envt])
+    | PProd(typ_op, list_pr) ->
+        TProd(check_PProd list_pr typ_op envt)
     | PAnd(p1, p2) ->
-        unification (check_pattern p1 ex e) (check_pattern p1 ex e)
+        unification (check_pattern p1 envt) (check_pattern p1 envt)
     | POr(p1, p2) ->
-        unification (check_pattern p1 ex e) (check_pattern p1 ex e)
-    | PNot(p) -> check_pattern p ex e
-    | PVar(v) ->
-        let e' = bind (Named v) (typage "_alpha_"  (compt ())) e in
-          TArrow((typage "_alpha_"  (compt ())), (check_expr ex e' None))
-    | PZero ->
-        TArrow((typage "_alpha_"  (compt ())), (check_expr ex e None))
-    | POne ->
-        TArrow((typage "_alpha_"  (compt ())), (check_expr ex e None))
-
-  and check_PSum constr ty_op patt_op p_ex e =
-    match (ty_op, patt_op) with
-    | (Some ty, Some patt) ->
-        let t_ty = check_typ ty e in
-          let t_patt = check_pattern patt p_ex e in
-            Some(TConstructor(constr , Some (unification t_ty t_patt)))
-    | (None , Some patt) ->
-        let t_patt = check_pattern patt p_ex e in
-          Some(TConstructor(constr , Some t_patt ))
-    | (None , None ) -> None
-    | (_, _) -> raise PSumTypingError
-
-  and check_PProd l_pr ty_op p_ex e =
-    match l_pr with
-    | [] -> []
-    | (constr, patt_op)::l_pr' ->
-        begin match check_PSum constr ty_op patt_op p_ex e with
-        | Some p -> p::(check_PProd l_pr' ty_op p_ex e)
-        | None   ->
-            (TConstructor(constr, None))::(check_PProd l_pr' ty_op p_ex e)
+        unification (check_pattern p1 envt) (check_pattern p1 envt)
+    | PNot(pattern_not) -> 
+        check_pattern pattern_not envt
+    | PVar(value_id) ->
+        begin match (lookup_ref value_id envt) with
+        | Some typ_value -> typ_value
+        | None ->
+            typage "_alpha_" (compt ())
         end
+    | PZero ->
+        typage "_alpha_"  (compt ())
+    | POne ->
+        typage "_alpha_"  (compt ())
+
+  and check_PSum constr typ_op pattern_op envt =
+    match (typ_op, pattern_op) with
+    | (Some ty, Some pattern) ->
+        let typ_ty = check_typ ty envt in
+          let typ_patt = check_pattern pattern envt in
+            TConstructor(constr, Some (unification typ_ty typ_patt))
+    | (None , Some patt) ->
+        let t_patt = check_pattern patt envt in
+          TConstructor(constr, Some t_patt )
+    | (Some ty, None) -> 
+        TConstructor(constr, None)
+    | (None , None ) -> TConstructor(constr, None)
+
+  and check_PProd list_pr typ_op envt =
+    match list_pr with
+    | [] -> []
+    | (constr, patt_op)::list_pr' ->
+        let t_sum = check_PSum constr typ_op patt_op envt in
+        (t_sum)::(check_PProd list_pr' typ_op envt)
 
   and check_typs tys e =
     match tys with
