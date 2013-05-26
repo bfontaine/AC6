@@ -68,10 +68,9 @@ let program p =
             unification t_ty t_brs
         end
 
-     | ESum(_,_,_)	-> failwith "ESum Not implemented"
-     
-     | EProd(_,_)	-> failwith "EProd Not implemented"
-
+     | ESum(constr,ty_op,ex_op)	-> TSum([check_ESum constr ty_op ex_op e])
+    
+     | EProd(ty_op,l_pr)	-> TProd(check_EProd l_pr ty_op e)
 
   and check_mutually_recursive l e =
     let e' = 
@@ -172,6 +171,24 @@ let program p =
             | (None,_) -> raise (UndeclaredVariable v)
             end
 
+  and check_ESum constr ty_op ex_op e =
+     match (ty_op,ex_op) with
+        | (Some ty, Some ex) ->
+            let t_ty = check_typ ty e in
+            let t_ex = check_expr ex e None in
+            TConstructor(constr , Some (unification t_ty t_ex) )
+        | (None ,Some ex) ->
+            let t_ex = check_expr ex e None in
+            TConstructor(constr , Some t_ex )
+        | (None ,None ) -> TConstructor(constr,None)
+        | (_,_) -> raise ESumErrorTyping 
+
+  and check_EProd l_pr ty_op e =
+    match l_pr with
+    | [] -> []
+    | (constr,ex_op)::l_pr' -> 
+        (check_ESum constr ty_op ex_op e)::(check_EProd l_pr' ty_op e)
+
   and check_branchs brs e =
     match brs with
     | []    -> raise BranchsErrorVide
@@ -202,16 +219,24 @@ let program p =
     | [] -> []
     | ty::tys' -> (check_typ ty e)::(check_typs tys' e) 
 
+  and check_typ_constr ty_constr e =
+    match ty_constr with
+    | [] -> []
+    | (TConstructor(c, Some ty))::tyc' -> 
+        (TConstructor(c, Some (check_typ ty e)))::(check_typ_constr tyc' e) 
+    | (TConstructor(_,_) as constr)::tyc' -> 
+        (constr)::(check_typ_constr tyc' e) 
+
   and check_typ ty e =
     match ty with 
     | TVar(t_i,tys) -> 
         if Hashtbl.mem sign t_i 
         then TVar(t_i, check_typs tys e)
         else raise TVarErrorTyping
-    | TArrow(t1,t2)   ->TArrow(check_typ t1 e, check_typ t2 e)
-    | TSum(_)       -> failwith "TSum Not implemented" 
-    | TProd(_)      -> failwith "TProd Not implemented" 
-    | TRec(t_i,tr_ty)  -> 
+    | TArrow(t1,t2)     -> TArrow(check_typ t1 e, check_typ t2 e)
+    | TSum(l_constr)    -> TSum(check_typ_constr l_constr e)
+    | TProd(l_constr)   -> TProd(check_typ_constr l_constr e)
+    | TRec(t_i,tr_ty)   -> 
         if Hashtbl.mem sign t_i 
         then TRec(t_i, (check_typ tr_ty e))
         else raise TVarErrorTyping
