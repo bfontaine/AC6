@@ -198,12 +198,12 @@ and eval_branchs envt branchs exp =
   match branchs with
   | [] -> raise No_match
   | Branch(patt, exp')::branchs' ->
-      begin match (eval_branch patt exp' exp envt) with
-      (* if this branch matches, return the new environment *)
-      | Some vexp -> vexp
-      (* if not, try the next one *)
-      | _         -> eval_branchs envt branchs' exp
-      end
+      try
+        (* if this branch matches, return the new environment *)
+        eval_branch patt exp' exp envt
+      with No_match ->
+        (* if not, try the next one *)
+        eval_branchs envt branchs' exp
 
 (**
  * Evaluate a branch. It returns a value option. A branch is something like
@@ -215,12 +215,12 @@ and eval_branchs envt branchs exp =
  * @param br_exp the expression in the branch
  * @param input_exp the expression on which the branch is 'applied'
  * @param envt the environment
- * @return a V-expression option
+ * @return a V-expression
+ * @raise No_match if it doesn't match
  **)
 and eval_branch patt br_exp input_exp envt =
-  match eval_pattern patt input_exp envt with
-  | Some envt' -> Some (eval_expr br_exp envt')
-  | _          -> None
+  let envt' = eval_pattern patt input_exp envt in
+    eval_expr br_exp envt'
 
 (**
  * Evaluate a pattern sum. It returns a value option.
@@ -235,10 +235,12 @@ and eval_branch patt br_exp input_exp envt =
  * @param econstr  constructor_identifier of the expression
  * @param subvalue the optional value in it (something like 'A[v]')
  * @param envt     the environment
+ * @return         an environment if it matches
+ * @raise No_match if it doesn't match
  **)
 and eval_psum pconstr subpatt econstr subvalue envt =
   (* If the construtor ids don't match, the pattern doesn't match *)
-  if pconstr <> econstr then None
+  if pconstr <> econstr then raise No_match
   else
     match subpatt with
     (* sum with sub-pattern *)
@@ -252,15 +254,15 @@ and eval_psum pconstr subpatt econstr subvalue envt =
 
         (* ...else if the expression is something like A (and not A[x]),
            don't match *)
-        | _ -> None
+        | _ -> raise No_match
         end
 
     (* sum without sub-pattern
        if the constructor ids match, then the pattern matches *)
-    | _ -> Some envt
+    | _ -> envt
 
 (**
- * Evaluate a pattern product. It returns a value option.
+ * Evaluate a pattern product. It returns an environment.
  * A PSum is something like that :
  *
  *  {K1 -> p1 ... kn -> pn} ~ {k1 -> v1 ... kn -> vn}
@@ -271,18 +273,16 @@ and eval_psum pconstr subpatt econstr subvalue envt =
  * @param econstrs list of constructor identifiers from the expression and
  *                 their (optional) value. This list must be already sorted.
  * @param envt     the current environment
+ * @raise No_match if it doesn't match
  **)
 and eval_pprod pconstrs econstrs envt =
   try
-    Some (List.fold_left2 (
+    List.fold_left2 (
       fun envt' (constr1, subpatt1) (constr2, subpatt2) ->
-        match eval_psum constr1 subpatt1 constr2 subpatt2 envt' with
-        | Some e -> e
-        | _      -> raise Exit
-    ) envt (List.sort compare pconstrs) econstrs)
+        eval_psum constr1 subpatt1 constr2 subpatt2 envt'
+    ) envt (List.sort compare pconstrs) econstrs
   with
-    Invalid_argument _ -> None
-  | Exit               -> None
+    Invalid_argument _ -> raise No_match
 
 (**
  * Evaluate a pattern on an expression. If it matches, it returns an
@@ -304,7 +304,7 @@ and eval_pattern patt exp envt =
       (* If the given expression is a sum *)
       | VStruct [(c',v)] -> eval_psum c p c' v envt
       (* If the given expression is not a sum *)
-      | _ -> None
+      | _ -> raise No_match
       end
 
   (* | { ... , C -> P } => ... : product pattern *)
@@ -313,37 +313,46 @@ and eval_pattern patt exp envt =
       (* If the given expression is a prod *)
       | VStruct ex_li -> eval_pprod px ex_li envt
       (* If the given expression is not a prod *)
-      | _ -> None
+      | _ -> raise No_match
       end
 
   (* | p1 and p2 => ... : 'and' pattern *)
-  | PAnd(p1, p2) -> begin match (eval_pattern p1 exp envt) with
-    | None       -> None
-    | Some envt2 -> eval_pattern p2 exp envt2
-    end
+  | PAnd(p1, p2) -> eval_pattern p2 exp (eval_pattern p1 exp envt)
 
   (* | p1 or p2 => ... : 'or' pattern *)
-  | POr(p1, p2) -> begin match (eval_pattern p1 exp envt) with
-    | None -> eval_pattern p2 exp envt
-    | ve   -> ve
-    end
+  | POr(p1, p2) ->
+      (try
+        eval_pattern p1 exp envt
+      with No_match ->
+        eval_pattern p2 exp envt)
 
   (* | not p => ... : this pattern matches only if its sub-pattern
                       doesn't match. *)
-  | PNot(p) -> begin match eval_pattern p exp envt with
-    | Some _ -> None
-    | _      -> Some envt
-    end
+  | PNot(p) ->
+      (*
+        This is a hack to simulate something like this:
+
+            try
+                eval_pattern p exp envt
+            with No_match -> envt
+            else_if_no_exception raise No_match
+       *)
+      let r =
+        (try
+          ignore (eval_pattern p exp envt); true
+        with No_match -> false)
+      in
+        if r then raise No_match else envt
 
   (* | x => ... : set x to the input expression
                   and return the new environment *)
-  | PVar(v) -> Some (Env.bind (Named v) exp envt)
+  | PVar(v) -> (Env.bind (Named v) exp envt)
 
   (* | _ => ... : always matches *)
-  | POne -> Some envt
+  | POne -> envt
 
   (* | 0 => ... : never matches *)
-  | PZero -> None
+  | PZero -> raise No_match
 
 (**
  * Evaluate a program.
