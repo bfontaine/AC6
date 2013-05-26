@@ -219,16 +219,24 @@ let program p =
     | [] -> []
     | ty::tys' -> (check_typ ty e)::(check_typs tys' e) 
 
+  and check_typ_constr ty_constr e =
+    match ty_constr with
+    | [] -> []
+    | (TConstructor(c, Some ty))::tyc' -> 
+        (TConstructor(c, Some (check_typ ty e)))::(check_typ_constr tyc' e) 
+    | (TConstructor(_,_) as constr)::tyc' -> 
+        (constr)::(check_typ_constr tyc' e) 
+
   and check_typ ty e =
     match ty with 
     | TVar(t_i,tys) -> 
         if Hashtbl.mem sign t_i 
         then TVar(t_i, check_typs tys e)
         else raise TVarErrorTyping
-    | TArrow(t1,t2)   ->TArrow(check_typ t1 e, check_typ t2 e)
-    | TSum(_)       -> failwith "TSum Not implemented" 
-    | TProd(_)      -> failwith "TProd Not implemented" 
-    | TRec(t_i,tr_ty)  -> 
+    | TArrow(t1,t2)     -> TArrow(check_typ t1 e, check_typ t2 e)
+    | TSum(l_constr)    -> TSum(check_typ_constr l_constr e)
+    | TProd(l_constr)   -> TProd(check_typ_constr l_constr e)
+    | TRec(t_i,tr_ty)   -> 
         if Hashtbl.mem sign t_i 
         then TRec(t_i, (check_typ tr_ty e))
         else raise TVarErrorTyping
