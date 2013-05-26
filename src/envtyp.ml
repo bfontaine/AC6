@@ -9,6 +9,7 @@ exception EAnnotErrorTyping
 exception EAppErrorTyping
 exception EAppErrorTVar of string * int
 exception EVarErrorTyping
+exception ESumErrorTyping
 exception TVarErrorTyping 
 exception UnificationError
 exception BranchsErrorVide

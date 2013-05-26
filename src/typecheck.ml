@@ -68,7 +68,18 @@ let program p =
             unification t_ty t_brs
         end
 
-     | ESum(_,_,_)	-> failwith "ESum Not implemented"
+     | ESum(constr,ty_op,ex_op)	->
+        begin match (ty_op,ex_op) with
+        | (Some ty, Some ex) ->
+            let t_ty = check_typ ty e in
+            let t_ex = check_expr ex e None in
+            TSum([TConstructor(constr , Some (unification t_ty t_ex) )])
+        | (None ,Some ex) ->
+            let t_ex = check_expr ex e None in
+            TSum([TConstructor(constr , Some t_ex )])
+        | (None ,None ) -> TSum([TConstructor(constr,None)])
+        | (_,_) -> raise ESumErrorTyping 
+        end
      
      | EProd(_,_)	-> failwith "EProd Not implemented"
 
