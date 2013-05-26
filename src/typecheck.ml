@@ -27,9 +27,12 @@ let program p =
         (* Check the definition, and iter on the
          * rest of the program *)
         let e' = begin match d with
-          | DType(ty_id,ty_ids,ty)-> failwith "DType Not implemented"
+          | DType(ty_id,ty_ids,ty)-> check_dtype ty_id ty_ids ty e
           | DVal(v) -> check_vdef v e 
         end in check defs e'
+
+  and check_dtype ty_id ids ty e =
+    failwith "DType Not implemented" 
 
   and check_vdef v e =
     match v with
@@ -180,17 +183,39 @@ let program p =
         | _ -> raise BranchErrorUnion
 
   and check_branch p ex e =
-    check_expr ex e None
+    check_pattern p e
+    
+  and check_pattern patt e =
+    match patt with
+    | PSum(_,_,_) -> failwith "Pattern Not Implemented"
+    | PProd(_,_) -> failwith "Pattern Not Implemented"
+    | PAnd(_,_) -> failwith "Pattern Not Implemented"
+    | POr(_,_) -> failwith "Pattern Not Implemented"
+    | PNot(_) -> failwith "Pattern Not Implemented"
+    | PVar(_) -> failwith "Pattern Not Implemented"
+    | PZero -> failwith "Pattern Not Implemented"
+    | POne -> failwith "Pattern Not Implemented"
+
+
+  and check_typs tys e =
+    match tys with
+    | [] -> []
+    | ty::tys' -> (check_typ ty e)::(check_typs tys' e) 
 
   and check_typ ty e =
     match ty with 
-    | TVar(t_i,_) -> 
-        if Hashtbl.mem sign t_i then ty
+    | TVar(t_i,tys) -> 
+        if Hashtbl.mem sign t_i 
+        then TVar(t_i, check_typs tys e)
         else raise TVarErrorTyping
-    | TArrow(t1,t2)   -> TArrow(check_typ t1 e, check_typ t2 e) 
+    | TArrow(t1,t2)   ->TArrow(check_typ t1 e, check_typ t2 e)
     | TSum(_)       -> failwith "TSum Not implemented" 
     | TProd(_)      -> failwith "TProd Not implemented" 
-    | TRec(_)       -> failwith "TRec Not implemented" 
+    | TRec(t_i,tr_ty)  -> 
+        if Hashtbl.mem sign t_i 
+        then TRec(t_i, (check_typ tr_ty e))
+        else raise TVarErrorTyping
+
   in 
   if !flag then 
      (add_op_defauld () ; check p (empty ()) )
