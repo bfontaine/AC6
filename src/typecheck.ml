@@ -180,8 +180,8 @@ let program p =
         | (None ,Some ex) ->
             let t_ex = check_expr ex e None in
             TConstructor(constr , Some t_ex )
+        | (Some ty ,None ) -> TConstructor(constr, Some (check_typ ty e))
         | (None ,None ) -> TConstructor(constr,None)
-        | (_,_) -> raise ESumErrorTyping 
 
   and check_EProd l_pr ty_op e =
     match l_pr with
@@ -204,10 +204,11 @@ let program p =
     match patt with
     | PSum(constr, ty_op, patt_op)   -> 
         begin match check_PSum constr ty_op patt_op ex e with
-        | Some p -> TSum([p])
-        | None -> check_expr ex e None
+        | Some p -> TArrow(TSum([p]), (check_expr ex e None))
+        | None -> TArrow(TSum([TConstructor(constr,None)]) ,(check_expr ex e None))
         end
-    | PProd(ty_op, l_pr)    -> TProd(check_PProd l_pr ty_op ex e )
+    | PProd(ty_op, l_pr)    ->
+        TArrow(TProd(check_PProd l_pr ty_op ex e ), (check_expr ex e None))
     | PAnd(p1,p2)   -> 
         unification (check_pattern p1 ex e) (check_pattern p1 ex e)
     | POr(p1,p2)    -> 
@@ -215,9 +216,9 @@ let program p =
     | PNot(p)       -> check_pattern p ex e 
     | PVar(v)       -> 
         let e' = bind (Named v) (typage "_alpha_"  (compt ())) e in
-        check_expr ex e' None
-    | PZero         -> check_expr ex e None
-    | POne          -> check_expr ex e None
+        TArrow((typage "_alpha_"  (compt ())), (check_expr ex e' None))
+    | PZero         -> TArrow((typage "_alpha_"  (compt ())), (check_expr ex e None))
+    | POne          -> TArrow((typage "_alpha_"  (compt ())), (check_expr ex e None))
 
   and check_PSum constr ty_op patt_op p_ex e =
      match (ty_op, patt_op) with
@@ -229,7 +230,7 @@ let program p =
             let t_patt = check_pattern patt p_ex e in
             Some(TConstructor(constr , Some t_patt ))
         | (None ,None ) -> None
-        | (_,_) -> raise ESumErrorTyping 
+        | (_,_) -> raise PSumErrorTyping 
 
   and check_PProd l_pr ty_op p_ex e =
     match l_pr with

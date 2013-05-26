@@ -9,9 +9,11 @@ exception EAnnotErrorTyping
 exception EAppErrorTyping
 exception EAppErrorTVar of string * int
 exception EVarErrorTyping
-exception ESumErrorTyping
+exception PSumErrorTyping
+exception DTypeErrorSig
 exception TVarErrorTyping 
 exception UnificationError
+exception UnificationError_TS_TP
 exception BranchsErrorVide
 exception BranchErrorUnion
 
@@ -101,7 +103,7 @@ let tUnit = TVar(TIdentifier("U",-1),[])
 
 let list_compare l_1 l_2 ty = 
     if l_1 = l_2 then ty 
-    else raise UnificationError
+    else raise UnificationError_TS_TP
 
 let rec unification ty ty_exp =
     match ty, ty_exp with
