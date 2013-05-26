@@ -1,0 +1,10 @@
+** ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
+def combine (f) (g) = (fun (x) => g (f (x)))
+
+** int -> int
+val f = (fun (x) => x + x)
+
+** bool -> bool
+val g = (fun (x) => ~x)
+
+val combine_fg = combine f g

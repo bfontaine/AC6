@@ -6,9 +6,12 @@
 *-counter
 *.bad-output
 *.good-output
+*.native
+*.byte
+*.d.native
+*.p.byte
 _build
 clap
-clap.native
 .highscore
 /clap-galichet-fontaine-*
 /doc/html

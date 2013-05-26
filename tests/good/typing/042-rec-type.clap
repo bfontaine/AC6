@@ -1,0 +1,1 @@
+type student <t> = rec s is { Dead + Alive { Has t * Friend s } }

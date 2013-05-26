@@ -5,13 +5,14 @@ type value = Primitive.t Runtime.value
 
 type env = Primitive.t Runtime.venv
 
+(* This is module of the Weak table used for hash-consing. *)
 module WeakValues = Weak.Make(struct
   type t = value
   let equal x y = (x = y)
   let hash = Hashtbl.hash
 end)
 
-(* The hashtable used for memoization, and weak hashtable used for
+(* The hashtable used for memoization and the weak hashtable used for
    hash-consing *)
 let memo, hc_table =
   if !Memo.flag then
@@ -19,9 +20,10 @@ let memo, hc_table =
   else
     Hashtbl.create 0, WeakValues.create 0
 
-(* Hashconsing - Wrap every value in this function, e.g.:
-    before : (VInt 42)
-    after  : (hc (VInt 42))  *)
+(* Hashconsing --
+    Wrap every value in this function, e.g.:
+      before : (VInt 42)
+      after  : (hc (VInt 42)) *)
 let hc =
   if !Memo.flag
   then WeakValues.merge hc_table
@@ -36,9 +38,10 @@ let hc =
  * @return the new environment
  **)
 let rec eval p e =
+  (* The "accumulator" of the [List.fold_left] call is the current
+     environment. *)
   List.fold_left (
-    fun e d ->
-      match d with
+    fun e -> function
       | DVal(v) -> eval_vdef v e
       | _       -> e
   ) e p
@@ -59,13 +62,13 @@ and eval_mutually_recursive l e =
   let e' = 
     (* 1- declare empty functions *)
     List.fold_left
-      (fun e' -> function
-        | (Binding(i, _), _) -> Env.declare i e')
+      (fun e' -> function (Binding(i, _), _) -> Env.declare i e')
       e l
   in
     (* 2- bind their bodies *)
     List.iter (function
-      | (Binding(Named(_) as i, _), body) -> Env.define i (eval_expr body e') e'
+      | (Binding(Named(_) as i, _), body) ->
+          Env.define i (eval_expr body e') e'
       | _ -> ()
     ) l; e'
 
@@ -77,7 +80,7 @@ and eval_vdef v e = match v with
       eval_mutually_recursive l e
 
 (* evaluate an expression within an environment *)
-and eval_expr exp e = match exp with
+and eval_expr exp envt = match exp with
 
   (* chars *)
   | EChar(c)   -> hc (VChar c)
@@ -88,69 +91,78 @@ and eval_expr exp e = match exp with
 
   (* Annotation: (expr:type) *)
   | EAnnot(exp2, _) ->
-      eval_expr exp2 e
+      eval_expr exp2 envt
 
   (* Function application: f(x) *)
-  | EApp(f, e1) ->
-      begin match (eval_expr f e) with
+  | EApp(f, exp) ->
+      begin match (eval_expr f envt) with
       | VPrimitive(p) ->
-          Primitive.apply p (eval_expr e1 e)
+          Primitive.apply p (eval_expr exp envt)
 
-      | VClosure(ev, branchs) ->
-          eval_memo_branchs ev branchs (eval_expr e1 e)
+      | VClosure(closure_envt, branchs) ->
+          eval_memo_branchs closure_envt branchs (eval_expr exp envt)
 
       | _ ->
           raise Primitive.InvalidPrimitiveCall
       end
 
-  (* case { patt => expr | ... }  (and if/then/else) *)
+  (* case { patt => expr | ... }. This captures the current environment.
+     This cover also if/then/else, which are represented by a case-like
+     expression in the AST. *)
   | ECase(_, branchs) ->
-      hc (VClosure(e, branchs))
+      hc (VClosure(envt, branchs))
 
-  (* definition *)
+  (* definition of an expression *)
   | EDef(v, exp2) ->
-      eval_expr exp2 (eval_vdef v e)
+      eval_expr exp2 (eval_vdef v envt)
 
-  (* function *)
+  (* function, defined with the 'fun' keyword. *)
   | EFun(Binding(arg, _), exp2) ->
       let arg' = match arg with
-      | Named a -> (PVar a)
-      | Unnamed -> POne
+      | Named a -> PVar a
+      | _       -> POne
       in
-      hc (VClosure(e, [ Branch(arg', exp2) ]))
+      hc (VClosure(envt, [ Branch(arg', exp2) ]))
 
   (* product constructors *)
   | EProd(_, cl) ->
       let eval_constr = fun
         (c', ex) -> let ex' = begin match ex with
-          | Some exx -> Some (eval_expr exx e)
+          | Some exx -> Some (eval_expr exx envt)
           | None     -> None
         end in
           (c', ex')
       in
-        hc (VStruct(List.map eval_constr cl))
+        hc (VStruct(List.sort compare (List.rev_map eval_constr cl)))
 
   (* sum contructors *)
   | ESum(c, _, e1) -> let e2 = begin match e1 with
-    | Some e1' -> Some (eval_expr e1' e)
+    | Some e1' -> Some (eval_expr e1' envt)
     | None     -> None
   end in hc (VStruct([(c, e2)]))
 
+  (* variable *)
   | EVar(v) ->
       (try
         Primitive.lookup v
       with Not_found ->
-        Env.lookup (Named v) e)
+        Env.lookup (Named v) envt)
 
+  (* sequence of expressions *)
   | ESeq(es) ->
-      eval_eseq es e
+      eval_eseq es envt
 
-(* Evaluate a list of expressions *)
-and eval_eseq es ev =
+(**
+ * Evaluate a sequence of expressions.
+ *
+ * @param exp_seq the list of expressions
+ * @param envt the current environment
+ **)
+and eval_eseq exp_seq envt =
   (* We use List.fold_left even if we don't
      need an accumulator, since we have to iter
      on the list and then return the last result *)
-  List.fold_left (fun _ ex -> eval_expr ex ev) vunit es
+  List.fold_left (fun _ e -> eval_expr e envt) (hc vunit) exp_seq
 
 (**
  * Evaluate a list of branchs using memoization. If the list have been
@@ -168,7 +180,7 @@ and eval_memo_branchs ev branchs exp =
     (*
       Using
         try find with Not_found -> compute and memorize
-      seems to be faster than
+      is faster than
         if mem then find else      compute and memorize
 
       see: http://stackoverflow.com/a/12161946/735926
@@ -183,15 +195,15 @@ and eval_memo_branchs ev branchs exp =
     eval_branchs ev branchs exp
 
 (* evaluate a list of branchs, given an expression *)
-and eval_branchs ev branchs exp =
+and eval_branchs envt branchs exp =
   match branchs with
   | [] -> raise No_match
-  | Branch(p, exp')::branchs' ->
-      begin match (eval_branch p exp' exp ev) with
+  | Branch(patt, exp')::branchs' ->
+      begin match (eval_branch patt exp' exp envt) with
       (* if this branch matches, return the new environment *)
-      | Some ve -> ve
+      | Some vexp -> vexp
       (* if not, try the next one *)
-      | None    -> eval_branchs ev branchs' exp
+      | _         -> eval_branchs envt branchs' exp
       end
 
 (**
@@ -204,37 +216,40 @@ and eval_branchs ev branchs exp =
  * @param br_exp the expression in the branch
  * @param input_exp the expression on which the branch is 'applied'
  * @param envt the environment
+ * @return a V-expression option
  **)
 and eval_branch patt br_exp input_exp envt =
   match eval_pattern patt input_exp envt with
-  | None       -> None
   | Some envt' -> Some (eval_expr br_exp envt')
+  | _          -> None
 
 (**
  * Evaluate a pattern sum. It returns a value option.
  * A PSum is something like that :
  *
  *   K[p]  ~  {K  <- v}
- *   constr[patt] ~ ex_c <- ex_v
+ *   constr[subpatt] ~ pconstr <- econstr
  *
- * @param constr constructor_identifier
- * @param patt   pattern
- * @param ex_c   constructor_identifier with the expression
- * @param ex_v   pattern with the expression
- * @param envt   the environment
+ * @param pconstr  constructor identifier of the pattern
+ * @param subpatt  the optional pattern in it (something like 'A[p]', where 'A' is
+ *                 the constructor identifier and 'p' the pattern)
+ * @param econstr  constructor_identifier of the expression
+ * @param subvalue the optional value in it (something like 'A[v]')
+ * @param envt     the environment
  **)
-and eval_psum constr patt ex_c ex_v envt =
-  if constr <> ex_c then None
+and eval_psum pconstr subpatt econstr subvalue envt =
+  (* If the construtor ids don't match, the pattern doesn't match *)
+  if pconstr <> econstr then None
   else
-    match patt with
+    match subpatt with
     (* sum with sub-pattern *)
-    | Some p ->
+    | Some patt ->
         (* if constructor ids match... *)
-        begin match ex_v with
+        begin match subvalue with
 
         (* ...then if the expression is something like A[x],
            try to match p with x. *)
-        | Some v' -> eval_pattern p v' envt
+        | Some v -> eval_pattern patt v envt
 
         (* ...else if the expression is something like A (and not A[x]),
            don't match *)
@@ -246,69 +261,82 @@ and eval_psum constr patt ex_c ex_v envt =
     | _ -> Some envt
 
 (**
- * Evaluate a pattern produit. It returns a value option.
+ * Evaluate a pattern product. It returns a value option.
  * A PSum is something like that :
  *
  *  {K1 -> p1 ... kn -> pn} ~ {k1 -> v1 ... kn -> vn}
- *  {         px          } ~ {        ex_li        }
+ *  {       pconstrs      } ~ {     econstrs        }
  *
- * @param px    list of contructor_identifier and pattern
- * @param ex_li list of construcor_identifier and value
- * @param envt  the environment
+ * @param pconstrs list of constructor identifiers from the pattern and their
+ *                 (optional) sub-patterns.
+ * @param econstrs list of constructor identifiers from the expression and
+ *                 their (optional) value. This list must be already sorted.
+ * @param envt     the current environment
  **)
-and eval_pprod px ex_li envt =
+and eval_pprod pconstrs econstrs envt =
   try
     Some (List.fold_left2 (
-      fun ev (c1, p1) (c2, p2) ->
-        match eval_psum c1 p1 c2 p2 ev with
+      fun envt' (constr1, subpatt1) (constr2, subpatt2) ->
+        match eval_psum constr1 subpatt1 constr2 subpatt2 envt' with
         | Some e -> e
-        | _ -> raise Exit
-    ) envt px ex_li)
+        | _      -> raise Exit
+    ) envt (List.sort compare pconstrs) econstrs)
   with
     Invalid_argument _ -> None
-  | Exit -> None
+  | Exit               -> None
 
-
+(**
+ * Evaluate a pattern on an expression. If it matches, it returns an
+ * environment where it may have captured a value. For example, the
+ * following pattern:
+ *
+ *      B[x] => x + 2
+ * 
+ * Captures the sub-value of a constructor 'B' as 'x', and return this
+ * environment. Then, when the expression 'x+2' will be evaluated, 'x'
+ * will be bound to the captured value.
+ **)
 and eval_pattern patt exp envt =
   match patt with
 
-  (* | A[p] => ... *)
+  (* | A[p] => ... : sum pattern*)
   | PSum(c, _, p ) ->
       begin match exp with
-      (* If the given expression is a sum ...*)
+      (* If the given expression is a sum*)
       | VStruct [(c',v)] -> eval_psum c p c' v envt
-      (* If the given expression is not a sum, don't match *)
+      (* If the given expression is not a sum *)
       | _ -> None
       end
-  (*  { , C -> P } => ...    *)
+  (* | { , C -> P } => ... : product pattern *)
   | PProd(_, px)  ->
       begin match exp with
-      (* If the given expression is a prod ...*)
+      (* If the given expression is a prod *)
       | VStruct ex_li -> eval_pprod px ex_li envt
-      (* If the given expression is not a prod, don't match *)
+      (* If the given expression is not a prod *)
       | _ -> None
       end
 
-  (* | p1 and p2 => ... *)
+  (* | p1 and p2 => ... : 'and' pattern *)
   | PAnd(p1, p2)  -> begin match (eval_pattern p1 exp envt) with
     | None       -> None
     | Some envt2 -> eval_pattern p2 exp envt2
     end
 
-  (* | p1 or p2 => ... *)
+  (* | p1 or p2 => ... : 'or' pattern *)
   | POr(p1, p2) -> begin match (eval_pattern p1 exp envt) with
     | None -> eval_pattern p2 exp envt
     | ve   -> ve
     end
 
   (* | not p => ... : this pattern matches only if its sub-pattern
-   * doesn't match. *)
+                      doesn't match. *)
   | PNot(p) -> begin match eval_pattern p exp envt with
     | Some _ -> None
     | None   -> Some envt
     end
 
-  (* | x => ... : set x to the input and return the new environment *)
+  (* | x => ... : set x to the input expression
+                  and return the new environment *)
   | PVar(v) -> Some (Env.bind (Named v) exp envt)
 
   (* | _ => ... : always matches *)

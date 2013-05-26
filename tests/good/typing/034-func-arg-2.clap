@@ -1,0 +1,2 @@
+** ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
+def combine (f) (g) = (fun (x) => g (f (x)))

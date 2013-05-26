@@ -1,0 +1,8 @@
+def  be   (x) = x
+with bop  (x) = x
+with a    (x) = x
+with lula (x) = x
+
+val music = be.bop.a.lula
+
+val p = music "please"

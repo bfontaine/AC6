@@ -21,7 +21,7 @@ build:
 ${HIGHSCORE_FILE}:
 	echo -n 0 > $@
 
-check:	build announce ../.highscore
+check:	build announce ${HIGHSCORE_FILE}
 	@ for i in bad/* good/*; do					    \
 	  $(MAKE) --silent -C $$i check 2> /dev/null || true;    	    \
 	done; \
@@ -70,7 +70,7 @@ clean:
 	@ for i in bad/* good/*; do					    \
 	  $(MAKE) --silent -C $$i clean 2> /dev/null || true;    	    \
 	done;
-	@ rm --force *counter *~
+	@ rm -r --force *counter *~
 
 expected: build
 	@ for i in bad/* good/*; do					    \

@@ -1,118 +1,8 @@
 open AST
+open Envtyp
 
 let flag = ref false
 
-(** Exception of check typing **)
-exception UndeclaredVariable of value_identifier
-exception SimpleErrorTyping
-exception EFunErrorTyping
-exception EAnnotErrorTyping
-exception EAppErrorTyping
-exception EVarErrorTyping
-exception TVarErrorTyping 
-exception UnificationError
-
-(** Environment of typing  **)
-type env = (value_identifier * AST.typ option ref)list
-
-(** Signature of typping**)
-let sign = Hashtbl.create 42
-
-let add_op_defauld () =
-    Hashtbl.add sign (TIdentifier("int",-1))  ();
-    Hashtbl.add sign (TIdentifier("char",-1))  ();
-    Hashtbl.add sign (TIdentifier("string",-1))  ();
-    Hashtbl.add sign (TIdentifier("bool",-1))  ();
-    Hashtbl.add sign (TIdentifier("U",-1))  ()
-
-
-(** Abstract variable counter*)
-let compteur = ref (-1)
-
-let compt () = incr compteur ; !compteur
-
-(** Function on environment**)
-let empty () = []
-
-let bind x v env = 
-    match x with 
-    | Unnamed -> env
-    | Named x -> (x, ref (Some v)) :: env
-
-let declare x env = 
-  match x with
-  | Unnamed -> env
-  | Named x -> (x, ref None) :: env
-
-let identifier p = 
-  let p = AST.EVar p in
-  Operator.is_binop p || Operator.is_unop p
-
-let ( --> ) x y = 
-  match x with 
-  | AST.EVar x -> (x, y)
-  | _ -> assert false
-
-let typage x y = TVar(TIdentifier(x,y), [])
-let (--->) (x,z) (y,w) = TArrow( typage x z ,typage y w )
-let (&-->) (x,z) y = TArrow(typage x z ,y )
- 
-let lookup x = List.assoc x [
- Operator.minus       --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.plus        --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.star        --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.slash       --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.percent     --> (("int",-1)   &--> (("int",-1) ---> ("int",-1)));
- Operator.eq          --> (("_alpha_",compt ())  &--> (("_alpha_",compt ()) ---> ("bool",-1)));
- Operator.bangeq      --> (("_alpha_",compt ())  &--> (("_alpha_",compt ()) ---> ("bool",-1)));
- Operator.andand      --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
- Operator.pipepipe    --> (("bool",-1)  &--> (("bool",-1) --->("bool",-1)));
- Operator.le          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
- Operator.ge          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
- Operator.lt          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
- Operator.gt          --> (("int",-1)  &--> (("int",-1) ---> ("bool",-1)));
- Operator.boolean_not --> (("bool", -1) ---> ("bool",-1));
- Operator.negate      --> (("int" , -1) ---> ("int",-1));
-]
-
-let rec lookup_ref x env = 
-    match env with
-    | [] -> None
-    | (x',t)::env' -> 
-        if x = x' 
-            then !t 
-        else lookup_ref x env'
-
-let rec define_ref x t env =
-    match env with
-    | [] -> ()
-    | (x', t')::env' ->
-        if x' = x then t' := (Some t )
-        else define_ref x t env'
-
-let tInt = TVar(TIdentifier("int",-1),[])
-let tChar = TVar(TIdentifier("char",-1),[])
-let tString = TVar(TIdentifier("string",-1),[])
-let tBool = TVar(TIdentifier("bool",-1),[])
-let tUnit = TVar(TIdentifier("U",-1),[])
-
-(*** Unification of typing ***)
-module MapUnif = Map.Make(struct
-    type t = int  
-    let compare = compare
-end)
-
-let rec unification ty ty_exp =
-    match ty, ty_exp with
-    | TVar(tI,_), TVar(tI_ex,_) when tI = tI_ex-> ty 
-    | TVar(_,_), TVar(TIdentifier(s,nb),_) when (nb >= 0) -> ty 
-    | TVar(TIdentifier(s,nb),_), TVar(_,_) when (nb >= 0) -> ty_exp 
-    (*| _ , TVar(_,_) -> unification ty_exp ty *)
-    | TArrow(a1,b1), TArrow(a2,b2)  -> TArrow(unification a1 a2, unification b1 b2)
-    | TSum(_), TSum(_)          -> failwith "Unif TSum Not Implemented"
-    | TProd(_), TProd(_)        -> failwith "Unif TProd Not Implemented"
-    | TRec(_,_), TRec(_,_)      -> failwith "Unif TRec Not Implemented"
-    |(_,_)                      -> raise UnificationError
 (**
  * Check a program.
  *
@@ -137,14 +27,17 @@ let program p =
         (* Check the definition, and iter on the
          * rest of the program *)
         let e' = begin match d with
-          | DType(ty_id,ty_ids,ty)-> failwith "DType Not implemented"
+          | DType(ty_id,ty_ids,ty)-> check_dtype ty_id ty_ids ty e
           | DVal(v) -> check_vdef v e 
         end in check defs e'
+
+  and check_dtype ty_id ids ty e =
+    failwith "DType Not implemented" 
 
   and check_vdef v e =
     match v with
     | Simple(Binding(i, ty), ex) -> check_simple i ty ex e 
-    | MutuallyRecursive(l) -> failwith "MutuallyRecursive Not implemented"
+    | MutuallyRecursive(l) -> check_mutually_recursive l e
 
   and check_expr exp e pr_ex =
 	 match exp with
@@ -166,12 +59,36 @@ let program p =
 
      | EApp(f,e1)   -> check_EApp f e1 e pr_ex
     
-     | ECase(_,_)	-> failwith "ECase Not implemented"
+     | ECase(ty,brs)	->
+        begin match ty with
+        | None   -> check_branchs brs e
+        | Some p ->
+            let t_ty = check_typ p e in
+            let t_brs = check_branchs brs e in
+            unification t_ty t_brs
+        end
 
      | ESum(_,_,_)	-> failwith "ESum Not implemented"
      
      | EProd(_,_)	-> failwith "EProd Not implemented"
- 
+
+
+  and check_mutually_recursive l e =
+    let e' = 
+        (* 1- declare empty functions *)
+        List.fold_left (fun e' -> function
+        | (Binding(i, _), _) -> bind i (typage "_alpha_" (compt ())) e')
+        e l
+    in
+    (* 2- bind their bodies *)
+    List.iter (function
+      | (Binding(Named(i),_), body) -> 
+            let t_body = check_expr body e' None  in
+            define_ref i t_body e'
+      | _ -> ()
+    ) l; e'
+
+
   and check_simple i ty ex e =
     let ty_ex = check_expr ex e None in
     match ty with 
@@ -190,23 +107,36 @@ let program p =
              check_ESeq es' e pr_ex
 
   and check_EApp f e1 e pr_ex =
-       let t_f = check_expr f e pr_ex in
-        begin match t_f with
-        | TArrow(t_1,t )  -> 
-            let t_ex = check_expr e1 e (Some t_1) in
-            begin match (t_1,t_ex) with
-            | (TVar(TIdentifier("_alpha_",nb),_),t1) -> 
-                if nb >= 0 then t 
-                else raise EAppErrorTyping 
-            | (t1,TVar(TIdentifier("_alpha_",nb),_)) -> 
-                if nb >= 0 then t
-                else raise EAppErrorTyping 
-            | (t1,t2) ->
-                if t1 = t2 then t
-                else raise EAppErrorTyping 
+       let t_f = check_expr f e None in
+        match t_f with
+        | TArrow(ta_1,ta_2 )  -> 
+            let tA = check_TArrow ta_1 ta_2 e1 e in
+            begin match pr_ex with
+            | None -> tA
+            | Some p -> unification tA p
             end
-        | _     -> failwith "EApp Not implemented"
-        end
+        | TVar(TIdentifier("_alpha_",nb),_) when nb >= 0 -> check_TVar_alpha f t_f e1 e pr_ex 
+        | TVar(TIdentifier(str,nb),_) ->  raise (EAppErrorTVar (str, nb))
+        | TSum(_) -> failwith "EApp -> TSum Not implemented"
+        | TProd(_) -> failwith "EApp -> TProd Not implemented"
+        | TRec(_,_) -> failwith "EApp -> TRec Not implemented"
+
+  and check_TArrow ta_1 ta_2 e1 e =
+        let t_ex = check_expr e1 e (Some ta_1) in
+        match (ta_1,t_ex) with
+        | (t1,t2) when t1 = t2 -> ta_2
+        | (TVar(TIdentifier("_alpha_",nb),_),t1) when nb >= 0 -> ta_2
+        | (t1,TVar(TIdentifier("_alpha_",nb),_)) when nb >= 0 -> ta_2
+        | (_, _) -> raise EAppErrorTyping 
+
+  and check_TVar_alpha f t_f e1 e pr_ex =
+          let ty_f = match pr_ex with
+          | Some p -> p
+          | None -> typage "_alpha_" (compt ())
+          in
+          match f with 
+          |EVar(v) -> define_ref v (TArrow(t_f, ty_f)) e ;check_TArrow t_f ty_f e1 e            
+          | _ -> failwith "EApp -> TVar function Error "
 
   and check_EFun i ty exp e pr_ex =
     match ty with
@@ -215,8 +145,9 @@ let program p =
         let e' = bind i ty'' e in
         let t_ex = check_expr exp e' pr_ex in
         begin match i with
-        | Unnamed -> TArrow(ty'', t_ex)
-        | Named v -> begin match lookup_ref v e' with
+        | Unnamed -> raise EFunErrorTyping
+        | Named v -> 
+            begin match lookup_ref v e' with
             | Some t -> TArrow(t, t_ex)
             | None -> raise EFunErrorTyping
             end
@@ -236,18 +167,55 @@ let program p =
                  define_ref v t_f e ; t_f
             | (Some t_f , _ ) ->
                  define_ref v t_f e ; t_f
+            | (None,Some t_f) -> 
+                 define_ref v t_f e ; t_f
             | (None,_) -> raise (UndeclaredVariable v)
             end
 
+  and check_branchs brs e =
+    match brs with
+    | []    -> raise BranchsErrorVide
+    | Branch(p,ex)::[] -> check_branch p ex e
+    | Branch(p,ex)::brs' ->
+        let t_brs' = check_branchs brs' e in
+        match check_branch p ex e with
+        | t_brs when t_brs = t_brs' -> t_brs'
+        | _ -> raise BranchErrorUnion
+
+  and check_branch p ex e =
+    check_pattern p e
+    
+  and check_pattern patt e =
+    match patt with
+    | PSum(_,_,_) -> failwith "Pattern Not Implemented"
+    | PProd(_,_) -> failwith "Pattern Not Implemented"
+    | PAnd(_,_) -> failwith "Pattern Not Implemented"
+    | POr(_,_) -> failwith "Pattern Not Implemented"
+    | PNot(_) -> failwith "Pattern Not Implemented"
+    | PVar(_) -> failwith "Pattern Not Implemented"
+    | PZero -> failwith "Pattern Not Implemented"
+    | POne -> failwith "Pattern Not Implemented"
+
+
+  and check_typs tys e =
+    match tys with
+    | [] -> []
+    | ty::tys' -> (check_typ ty e)::(check_typs tys' e) 
+
   and check_typ ty e =
     match ty with 
-    | TVar(t_i,_) -> 
-        if Hashtbl.mem sign t_i then ty
+    | TVar(t_i,tys) -> 
+        if Hashtbl.mem sign t_i 
+        then TVar(t_i, check_typs tys e)
         else raise TVarErrorTyping
-    | TArrow(t1,t2)   -> TArrow(check_typ t1 e, check_typ t2 e) 
+    | TArrow(t1,t2)   ->TArrow(check_typ t1 e, check_typ t2 e)
     | TSum(_)       -> failwith "TSum Not implemented" 
     | TProd(_)      -> failwith "TProd Not implemented" 
-    | TRec(_)       -> failwith "TRec Not implemented" 
+    | TRec(t_i,tr_ty)  -> 
+        if Hashtbl.mem sign t_i 
+        then TRec(t_i, (check_typ tr_ty e))
+        else raise TVarErrorTyping
+
   in 
   if !flag then 
      (add_op_defauld () ; check p (empty ()) )

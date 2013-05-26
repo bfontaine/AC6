@@ -1,0 +1,4 @@
+** 'a -> int
+def  f (x) = if true then 17 else g (x)
+** 'a -> int
+with g (x) = f (x)

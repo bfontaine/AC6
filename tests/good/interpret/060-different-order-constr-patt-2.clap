@@ -1,0 +1,2 @@
+val x = (case { { O, C, A, M, L } => 42 }) ({ M, A, L, O, C })
+
