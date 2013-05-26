@@ -98,3 +98,8 @@ A script, written in Ruby, can be used to generate a few tests from the email
 answer of the correcting server. It can be found in `utils/get_server_tests.rb`.
 Additionally, some dozens of tests has been written by hand, to match some cases
 which are not not matched by the “official” tests suit.
+
+## Known Issues
+
+- The `print` primitive doesn’t handle special chars, like `\n`.
+- The type checking is not fully implemented.
