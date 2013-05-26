@@ -1,0 +1,1 @@
+val x = case at int { A => B }

@@ -19,7 +19,7 @@ let options = Arg.align [
   (* 'i' stands for 'i(nteractive interpreter)'. This is a short alias for
      '--repl'. *)
   "-i", Arg.Set repl,
-  "Alias for --repl.";
+  " Alias for --repl.";
 
   "--bench", Arg.Set benchmark,
   " Benchmark.";

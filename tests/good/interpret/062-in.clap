@@ -1,0 +1,2 @@
+val a =
+    val a = 2 in a * 2

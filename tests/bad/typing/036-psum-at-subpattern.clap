@@ -1,0 +1,1 @@
+val x = case { A at { B } [_] => 42 }

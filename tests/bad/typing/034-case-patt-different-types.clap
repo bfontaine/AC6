@@ -1,0 +1,3 @@
+type t1 = { A1 + A2 }
+type t2 = { B1 + B2 }
+val x = case { A1 => 42 | B2 => 37 }
