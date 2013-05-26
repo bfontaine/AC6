@@ -198,12 +198,12 @@ and eval_branchs envt branchs exp =
   match branchs with
   | [] -> raise No_match
   | Branch(patt, exp')::branchs' ->
-      begin match (eval_branch patt exp' exp envt) with
-      (* if this branch matches, return the new environment *)
-      | Some vexp -> vexp
-      (* if not, try the next one *)
-      | _         -> eval_branchs envt branchs' exp
-      end
+      try
+        (* if this branch matches, return the new environment *)
+        eval_branch patt exp' exp envt
+      with No_match ->
+        (* if not, try the next one *)
+        eval_branchs envt branchs' exp
 
 (**
  * Evaluate a branch. It returns a value option. A branch is something like
@@ -215,12 +215,12 @@ and eval_branchs envt branchs exp =
  * @param br_exp the expression in the branch
  * @param input_exp the expression on which the branch is 'applied'
  * @param envt the environment
- * @return a V-expression option
+ * @return a V-expression
  **)
 and eval_branch patt br_exp input_exp envt =
   match eval_pattern patt input_exp envt with
-  | Some envt' -> Some (eval_expr br_exp envt')
-  | _          -> None
+  | Some envt' -> eval_expr br_exp envt'
+  | _          -> raise No_match
 
 (**
  * Evaluate a pattern sum. It returns a value option.
