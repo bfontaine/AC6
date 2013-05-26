@@ -1,0 +1,3 @@
+** 'a -> int
+** Note: will never match
+val x = case { 0 => 42 }

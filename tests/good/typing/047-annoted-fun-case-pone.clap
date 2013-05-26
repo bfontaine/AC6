@@ -1,0 +1,2 @@
+** int -> string
+val f = fun (x : int) => case { _ => "toto" }
