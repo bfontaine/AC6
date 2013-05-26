@@ -203,19 +203,36 @@ let program p =
     
   and check_pattern patt ex e =
     match patt with
-    | PSum(_,_,_) -> failwith "Pattern Not Implemented"
-    | PProd(_,_) -> failwith "Pattern Not Implemented"
-    | PAnd(p1,p2) -> 
+    | PSum(constr, ty_op, patt_op)   -> TSum([check_PSum constr ty_op patt_op ex e])
+    | PProd(ty_op, l_pr)    -> TProd(check_PProd l_pr ty_op ex e )
+    | PAnd(p1,p2)   -> 
         unification (check_pattern p1 ex e) (check_pattern p1 ex e)
-    | POr(p1,p2) -> 
+    | POr(p1,p2)    -> 
         unification (check_pattern p1 ex e) (check_pattern p1 ex e)
-    | PNot(p) -> check_pattern p ex e 
-    | PVar(v) -> 
+    | PNot(p)       -> check_pattern p ex e 
+    | PVar(v)       -> 
         let e' = bind (Named v) (typage "_alpha_"  (compt ())) e in
         check_expr ex e' None
-    | PZero -> typage "_alpha_"  (compt ())
-    | POne -> typage "_alpha_"  (compt ())
+    | PZero         -> typage "_alpha_"  (compt ())
+    | POne          -> typage "_alpha_"  (compt ())
 
+  and check_PSum constr ty_op patt_op p_ex e =
+     match (ty_op, patt_op) with
+        | (Some ty, Some patt) ->
+            let t_ty = check_typ ty e in
+            let t_patt = check_pattern patt p_ex e in
+            TConstructor(constr , Some (unification t_ty t_patt))
+        | (None ,Some patt) ->
+            let t_patt = check_pattern patt p_ex e in
+            TConstructor(constr , Some t_patt )
+        | (None ,None ) -> TConstructor(constr,None)
+        | (_,_) -> raise ESumErrorTyping 
+
+  and check_PProd l_pr ty_op p_ex e =
+    match l_pr with
+    | [] -> []
+    | (constr,patt_op)::l_pr' -> 
+        (check_PSum constr ty_op patt_op p_ex e)::(check_PProd l_pr' ty_op p_ex e)
 
   and check_typs tys e =
     match tys with
