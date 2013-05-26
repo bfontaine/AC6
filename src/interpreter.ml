@@ -29,7 +29,6 @@ let hc =
   then WeakValues.merge hc_table
   else fun v -> v
 
-
 (**
  * Evaluate a program with an environment.
  *
@@ -59,7 +58,7 @@ and eval_mutually_recursive l e =
      functions, we make it in two steps:
      - first, declare empty functions in the environment
      - then, define their body *)
-  let e' = 
+  let e' =
     (* 1- declare empty functions *)
     List.fold_left
       (fun e' -> function (Binding(i, _), _) -> Env.declare i e')
@@ -127,11 +126,11 @@ and eval_expr exp envt = match exp with
   (* product constructors *)
   | EProd(_, cl) ->
       let eval_constr = fun
-        (c', ex) -> let ex' = begin match ex with
+        (c, ex) -> let ex' = begin match ex with
           | Some exx -> Some (eval_expr exx envt)
           | None     -> None
         end in
-          (c', ex')
+          (c, ex')
       in
         hc (VStruct(List.sort compare (List.rev_map eval_constr cl)))
 
@@ -291,7 +290,7 @@ and eval_pprod pconstrs econstrs envt =
  * following pattern:
  *
  *      B[x] => x + 2
- * 
+ *
  * Captures the sub-value of a constructor 'B' as 'x', and return this
  * environment. Then, when the expression 'x+2' will be evaluated, 'x'
  * will be bound to the captured value.
@@ -299,16 +298,17 @@ and eval_pprod pconstrs econstrs envt =
 and eval_pattern patt exp envt =
   match patt with
 
-  (* | A[p] => ... : sum pattern*)
+  (* | A[p] => ... : sum pattern *)
   | PSum(c, _, p ) ->
       begin match exp with
-      (* If the given expression is a sum*)
+      (* If the given expression is a sum *)
       | VStruct [(c',v)] -> eval_psum c p c' v envt
       (* If the given expression is not a sum *)
       | _ -> None
       end
-  (* | { , C -> P } => ... : product pattern *)
-  | PProd(_, px)  ->
+
+  (* | { ... , C -> P } => ... : product pattern *)
+  | PProd(_, px) ->
       begin match exp with
       (* If the given expression is a prod *)
       | VStruct ex_li -> eval_pprod px ex_li envt
@@ -317,7 +317,7 @@ and eval_pattern patt exp envt =
       end
 
   (* | p1 and p2 => ... : 'and' pattern *)
-  | PAnd(p1, p2)  -> begin match (eval_pattern p1 exp envt) with
+  | PAnd(p1, p2) -> begin match (eval_pattern p1 exp envt) with
     | None       -> None
     | Some envt2 -> eval_pattern p2 exp envt2
     end
@@ -332,7 +332,7 @@ and eval_pattern patt exp envt =
                       doesn't match. *)
   | PNot(p) -> begin match eval_pattern p exp envt with
     | Some _ -> None
-    | None   -> Some envt
+    | _      -> Some envt
     end
 
   (* | x => ... : set x to the input expression
