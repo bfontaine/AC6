@@ -199,19 +199,20 @@ let program p =
         | t_brs when t_brs = t_brs' -> t_brs'
         | _ -> raise BranchErrorUnion
 
-  and check_branch p ex e =
-    check_pattern p e
+  and check_branch p ex e = check_pattern p ex e
     
-  and check_pattern patt e =
+  and check_pattern patt ex e =
     match patt with
     | PSum(_,_,_) -> failwith "Pattern Not Implemented"
     | PProd(_,_) -> failwith "Pattern Not Implemented"
     | PAnd(_,_) -> failwith "Pattern Not Implemented"
     | POr(_,_) -> failwith "Pattern Not Implemented"
     | PNot(_) -> failwith "Pattern Not Implemented"
-    | PVar(_) -> failwith "Pattern Not Implemented"
-    | PZero -> failwith "Pattern Not Implemented"
-    | POne -> failwith "Pattern Not Implemented"
+    | PVar(v) -> 
+        let e' = bind (Named v) (typage "_alpha_"  (compt ())) e in
+        check_expr ex e' None
+    | PZero -> typage "_alpha_"  (compt ())
+    | POne -> typage "_alpha_"  (compt ())
 
 
   and check_typs tys e =
