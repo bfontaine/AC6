@@ -195,7 +195,7 @@ let program p =
     | (None , Some ex) ->
         let t_ex = check_expr ex e None in
         TConstructor(constr , Some t_ex )
-    | (Some ty , None ) -> TConstructor(constr, Some (check_typ ty e))
+    | (Some ty , None ) -> TConstructor(constr,None )
     | (None , None ) -> TConstructor(constr, None)
 
   and check_EProd l_pr ty_op e =
