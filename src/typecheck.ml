@@ -189,13 +189,13 @@ let program p =
   and check_ESum constr ty_op ex_op e =
     match (ty_op, ex_op) with
     | (Some ty, Some ex) ->
-        let t_ty = check_typ ty e in
+        let t_constr = check_TSum constr ty in
         let t_ex = check_expr ex e None in
-        TConstructor(constr , Some (unification t_ty t_ex) )
+        TConstructor(t_constr , Some t_ex)
     | (None , Some ex) ->
         let t_ex = check_expr ex e None in
         TConstructor(constr , Some t_ex )
-    | (Some ty , None ) -> TConstructor(constr,None )
+    | (Some ty , None ) -> TConstructor( check_TSum constr ty ,None )
     | (None , None ) -> TConstructor(constr, None)
 
   and check_EProd l_pr ty_op e =
@@ -203,6 +203,11 @@ let program p =
     | [] -> []
     | (constr, ex_op)::l_pr' ->
         (check_ESum constr ty_op ex_op e)::(check_EProd l_pr' ty_op e)
+
+  and check_TSum tconstr tsum_op =
+    match tsum_op with
+    | TSum[TConstructor(constr,None)] when constr = tconstr -> constr
+    | _ -> raise TSumErrortypping
 
   and check_branchs branchs envt =
     match branchs with
@@ -253,14 +258,14 @@ let program p =
   and check_PSum constr typ_op pattern_op envt =
     match (typ_op, pattern_op) with
     | (Some ty, Some pattern) ->
-        let typ_ty = check_typ ty envt in
+        let typ_constr = check_TSum constr ty in
           let typ_patt = check_pattern pattern envt in
-            TConstructor(constr, Some (unification typ_ty typ_patt))
+            TConstructor(typ_constr, Some typ_patt)
     | (None , Some patt) ->
         let t_patt = check_pattern patt envt in
           TConstructor(constr, Some t_patt )
     | (Some ty, None) -> 
-        TConstructor(constr, Some( check_typ ty envt))
+        TConstructor( check_TSum constr ty, None)
     | (None , None ) -> TConstructor(constr, None)
 
   and check_PProd list_pr typ_op envt =

@@ -11,6 +11,7 @@ exception PSumTypingError
 exception TVarTypingError 
 exception UnificationError
 exception TSumTProdUnificationError
+exception TSumErrortypping
 exception EmptyBranchError
 exception UnionBranchError
 
