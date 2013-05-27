@@ -129,9 +129,7 @@ let program p =
         | TVar(TIdentifier("_alpha_", nb), _) when nb >= 0 ->
             check_TVar_alpha f t_f e1 e pr_ex
         | TVar(TIdentifier(str, nb), _) ->  raise (EAppErrorTVar (str, nb))
-        | TSum(_) -> failwith "EApp -> TSum Not implemented"
-        | TProd(_) -> failwith "EApp -> TProd Not implemented"
-        | TRec(_, _) -> failwith "EApp -> TRec Not implemented"
+        | _  -> failwith "EAppTypingErrorOther"
 
   and check_TArrow ta_1 ta_2 e1 e =
     let t_ex = check_expr e1 e (Some ta_1) in
@@ -139,7 +137,10 @@ let program p =
       | (t1, t2) when t1 = t2 -> ta_2
       | (TVar(TIdentifier("_alpha_", nb), _), t1) when nb >= 0 -> ta_2
       | (t1, TVar(TIdentifier("_alpha_", nb), _)) when nb >= 0 -> ta_2
-      | (_, _) -> raise EAppTypingError
+      | (TSum(list_ts),TSum([typ_constr])) -> 
+            if List.mem typ_constr list_ts then ta_2
+            else raise EAppTypingErrorTSum
+      | (_, _) -> raise EAppTypingErrorTArrow
 
   and check_TVar_alpha f t_f e1 e pr_ex =
     let ty_f = match pr_ex with
@@ -210,7 +211,16 @@ let program p =
     | Branch(pattern, expr)::branchs' ->
         let typ_branchs' = check_branchs branchs' envt in
           let typ_branch = check_branch pattern expr envt in
-            unification typ_branch typ_branchs'
+          union_branch typ_branch typ_branchs'
+
+  and union_branch typ_branch typ_branchs =
+    match  (typ_branch ,typ_branchs) with 
+    | (TArrow(TSum(list_br),typ_exp) , TArrow(TSum(list_brs),typ_exp')) ->
+        let typ_exp = unification typ_exp typ_exp' in
+        let list_final = list_br@list_brs in
+        TArrow(TSum(list_final),typ_exp)
+    | _ -> raise UnionBranchError
+
 
   and check_branch pattern expr envt =
     let typ_patt = check_pattern pattern envt in 
@@ -250,7 +260,7 @@ let program p =
         let t_patt = check_pattern patt envt in
           TConstructor(constr, Some t_patt )
     | (Some ty, None) -> 
-        TConstructor(constr, None)
+        TConstructor(constr, Some( check_typ ty envt))
     | (None , None ) -> TConstructor(constr, None)
 
   and check_PProd list_pr typ_op envt =

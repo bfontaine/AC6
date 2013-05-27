@@ -3,13 +3,16 @@ open AST
 (* Type-checking exceptions *)
 exception UndeclaredVariable of value_identifier
 exception EFunTypingError
-exception EAppTypingError
+exception EAppTypingErrorTArrow
+exception EAppTypingErrorOther
+exception EAppTypingErrorTSum
 exception EAppErrorTVar of string * int
 exception PSumTypingError
 exception TVarTypingError 
 exception UnificationError
 exception TSumTProdUnificationError
 exception EmptyBranchError
+exception UnionBranchError
 
 (* Environment of typing *)
 type env = (value_identifier * AST.typ option ref) list
