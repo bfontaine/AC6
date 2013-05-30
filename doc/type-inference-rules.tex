@@ -1,0 +1,88 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{semantic}
+\usepackage{amsxtra}
+\author{Baptiste Fontaine}
+\author{David Galichet}
+\begin{document}
+
+% litterals
+
+\begin{figure}[!h]
+\inference[(int)]{\text{i est un entier}}{\Gamma |- i : int}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(char)]{\text{c est un char}}{\Gamma |- c : char}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(string)]{\text{s est une string}}{\Gamma |- s : string}
+\end{figure}
+
+% vars
+
+\begin{figure}[!h]
+\inference[(var)]{E |- x : v & \Gamma |- v : \tau}{E,\Gamma |- x : \tau}
+\end{figure}
+
+% booleans
+
+\begin{figure}[!h]
+\inference[(true)]{}{\Gamma |- \texttt{True} : bool}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(false)]{}{\Gamma |- \texttt{False} : bool}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(tilde)]{\Gamma |- $b$ : bool}{\Gamma |- \sptilde$b$ : bool}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(eq)]{$$\oplus \in \{\texttt{=},\texttt{!=}\}$$ & $$\Gamma |- e_1$$ : \tau_1 & $$\Gamma |- e_2$$ : \tau_2}{$$\Gamma |- e_1 \oplus e_2$$ : bool}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(bool binop)]{$$\oplus \in \{\texttt{>},\texttt{<},\texttt{>=},\texttt{<=}\}$$ & $$\Gamma |- e_1$$ : int & $$\Gamma |- e_2$$ : int}{$$\Gamma |- e_1 \oplus e_2$$ : bool}
+\end{figure}
+
+% ints
+
+\begin{figure}[!h]
+\inference[(int binop)]{$$\oplus \in \{\texttt{+},\texttt{-},\texttt{*},\texttt{/},\texttt{\%}\}$$ & $$\Gamma |- e_1$$ : int & $$\Gamma |- e_2$$ : int}{$$\Gamma |- e_1 \oplus e_2$$ : int}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(minus)]{\Gamma |- $i$ : int}{\Gamma |- \texttt{-}$i$ : int}
+\end{figure}
+
+% exprs
+
+\begin{figure}[!h]
+\inference[(annot)]{\Gamma |- $e$ : $$\tau$$}{\Gamma |- $$(e:\tau)$$ : $$\tau$$}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(seq)]{$$\Gamma |- e_1$$ : \tau_1 & $$\Gamma |- e_2$$ : \tau_2}{$$\Gamma |- e_1\texttt{;}e_2$$ : \tau_2}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(app)]{$$\Gamma |- e_1$$ : \tau_1 \rightarrow \tau_2 & $$\Gamma |- e_2$$ : \tau_1}{$$\Gamma |- e_1 e_2$$ : \tau_2}
+\end{figure}
+
+% patterns
+
+\begin{figure}[!h]
+\inference[(pattern and)]{$$\Gamma |- p_1$$ : \tau & $$\Gamma |- p_2$$ : \tau}{$$\Gamma |- p_1 \texttt{ and } p_2$$ : \tau}
+\end{figure}
+
+\begin{figure}[!h]
+\inference[(pattern and)]{$$\Gamma |- p_1$$ : \tau & $$\Gamma |- p_2$$ : \tau}{$$\Gamma |- p_1 \texttt{ or } p_2$$ : \tau}
+\end{figure}
+
+\end{document}
